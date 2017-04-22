@@ -28,6 +28,8 @@ Let MonoDevelop and Visual Studio handle their own stuff.
 Restricted Third-Party Assets
 /Assets/Asset Usage Finder
 /Assets/Asset Usage Finder.meta
+/Assets/Filter2D
+/Assets/Filter2D.meta
 /Assets/Photon Unity Networking
 /Assets/Photon Unity Networking.meta
 /Assets/PhotonChatApi
