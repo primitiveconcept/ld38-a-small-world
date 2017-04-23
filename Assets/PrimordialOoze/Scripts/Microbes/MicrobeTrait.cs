@@ -14,6 +14,15 @@
 		private MicrobeData microbeData;
 
 
+		public enum TraitType
+		{
+			MaxHealth = 0,
+			Sight = 1,
+			Speed = 2,
+			Strength = 3
+		}
+
+
 		#region Properties
 		public bool Activated
 		{
@@ -26,6 +35,9 @@
 			get { return this.microbeData; }
 			set { this.microbeData = value; }
 		}
+
+
+		public abstract TraitType Type { get; }
 
 
 		public int Value

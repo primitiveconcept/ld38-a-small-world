@@ -24,15 +24,23 @@
 		private MicrobeTraitToggle[] traitPrefabs;
 
 		private MicrobeData currentMicrobe;
+		private MicrobeData previousMicrobe;
 		private MapCell[,] nucleusCells;
 		private MapCell[] perimeterCells;
 		private Microbe[] microbes;
+		private MicrobeTraitToggle[] traits; // Must sort according to type enum.
 
 
 		#region Properties
 		public MicrobeData CurrentMicrobe
 		{
 			get { return this.currentMicrobe; }
+		}
+
+
+		public Microbe[] Microbes
+		{
+			get { return this.microbes; }
 		}
 
 
@@ -54,12 +62,6 @@
 							* PerimeterToHealthRatio);
 			}
 		}
-
-
-		public Microbe[] Microbes
-		{
-			get { return this.microbes; }
-		}
 		#endregion
 
 
@@ -72,10 +74,6 @@
 			{
 				if (this.microbes[i] != null)
 					Destroy(this.microbes[i].gameObject);
-				else
-				{
-					Debug.Log("Was null?");
-				}
 			}
 		}
 
@@ -106,34 +104,26 @@
 		}
 
 
-		public void GenerateNewMap()
+		public void ClearTraits()
 		{
-			GenerateNucleus();
-			GeneratePerimeter();
-			GenerateMicrobes();
+			if (this.traits == null)
+				return;
+
+			for (int i = 0; i < this.traits.Length; i++)
+			{
+				if (this.traits[i] != null)
+					Destroy(this.traits[i].gameObject);
+			}
 		}
 
 
-		private void GenerateNucleus()
+		public void ExitCurrentMicrobe()
 		{
-			ClearNucleus();
-
-			Maze baseMaze = new Maze(this.NucleusSize);
-			this.nucleusCells = new MapCell[this.NucleusSize, this.NucleusSize];
-
-			for (int x = 0; x < this.NucleusSize; x++)
+			if (this.currentMicrobe.ParentMicrobe != null)
+				SetCurrentMicrobe(this.currentMicrobe.ParentMicrobe);
+			else
 			{
-				for (int y = 0; y < this.NucleusSize; y++)
-				{
-					if (baseMaze[x, y] != 0)
-					{
-						this.nucleusCells[x, y] = CreateCell(
-							x,
-							y,
-							(MapCell.Type)baseMaze[x, y],
-							new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f));
-					}
-				}
+				// TODO: Go to main map.
 			}
 		}
 
@@ -141,7 +131,7 @@
 		public void GenerateMicrobes()
 		{
 			ClearMicrobes();
-			var internalMap = this.currentMicrobe.InternalMap;
+			MapData internalMap = this.currentMicrobe.InternalMap;
 			int numberOfMicrobes = internalMap.Microbes.Count;
 			this.microbes = new Microbe[numberOfMicrobes];
 			for (int i = 0; i < numberOfMicrobes; i++)
@@ -150,6 +140,16 @@
 				this.microbes[i].Data = internalMap.Microbes[i];
 			}
 		}
+
+
+		public void GenerateNewMap()
+		{
+			GenerateNucleus();
+			GeneratePerimeter();
+			GenerateMicrobes();
+			GenerateTraits();
+		}
+
 
 		public void GeneratePerimeter()
 		{
@@ -194,18 +194,19 @@
 		}
 
 
-		public void LoadMapData(MapData mapData)
+		public void GenerateTraits()
 		{
-			foreach (var microbe in mapData.Microbes)
+			ClearTraits();
+
+			MapData internalMap = this.currentMicrobe.InternalMap;
+			int numberOfTraits = internalMap.Traits.Length;
+			this.traits = new MicrobeTraitToggle[numberOfTraits];
+			for (int i = 0; i < numberOfTraits; i++)
 			{
-				
+				MicrobeTrait data = internalMap.Traits[i];
+				this.traits[i] = Instantiate(this.traitPrefabs[(int)data.Type]);
+				this.traits[i].Data = data;
 			}
-		}
-
-
-		public MapData SaveMapData()
-		{
-			return null;
 		}
 
 
@@ -213,7 +214,6 @@
 		{
 			this.currentMicrobe = microbeData;
 			GenerateNewMap();
-			LoadMapData(microbeData.InternalMap);
 		}
 
 
@@ -243,6 +243,30 @@
 			}
 
 			return newCell;
+		}
+
+
+		private void GenerateNucleus()
+		{
+			ClearNucleus();
+
+			Maze baseMaze = new Maze(this.NucleusSize);
+			this.nucleusCells = new MapCell[this.NucleusSize, this.NucleusSize];
+
+			for (int x = 0; x < this.NucleusSize; x++)
+			{
+				for (int y = 0; y < this.NucleusSize; y++)
+				{
+					if (baseMaze[x, y] != 0)
+					{
+						this.nucleusCells[x, y] = CreateCell(
+							x,
+							y,
+							(MapCell.Type)baseMaze[x, y],
+							new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f));
+					}
+				}
+			}
 		}
 		#endregion
 	}

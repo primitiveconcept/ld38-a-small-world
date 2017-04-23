@@ -20,6 +20,9 @@
 		private GameObject attackDamageField;
 
 		[SerializeField]
+		private GameObject injectionField;
+
+		[SerializeField]
 		private bool isInvulnerable;
 
 		[SerializeField]
@@ -191,7 +194,7 @@
 				new Vector2(x, y).normalized
 				* (this.AttackSpeed + this.MaxSpeed));
 			this.attackDamageField.SetActive(true);
-			StartCoroutine(ApplyAttack(x, y));
+			StartCoroutine(WaitToFinishAttack(x, y));
 		}
 
 
@@ -205,6 +208,8 @@
 			this.Killed += OnKilled;
 			if (this.attackDamageField != null)
 				this.attackDamageField.SetActive(false);
+			if (this.injectionField != null)
+				this.injectionField.SetActive(false);
 		}
 
 
@@ -245,8 +250,8 @@
 			this.gamePhysics.SetMovement(
 				new Vector2(x, y).normalized
 				* ((this.AttackSpeed + this.MaxSpeed) / 2));
-			this.attackDamageField.SetActive(true);
-			StartCoroutine(ApplyAttack(x, y));
+			this.injectionField.SetActive(true);
+			StartCoroutine(WaitToFinishAttack(x, y));
 		}
 
 
@@ -293,9 +298,7 @@
 
 		public void OnInjected()
 		{
-			if (this.data.InternalMap == null)
-			{
-			}
+			Game.Instance.GameMap.SetCurrentMicrobe(this.Data);
 		}
 
 
@@ -349,7 +352,7 @@
 
 
 		#region Helper Methods
-		private IEnumerator ApplyAttack(float x, float y)
+		private IEnumerator WaitToFinishAttack(float x, float y)
 		{
 			this.isMoving = true;
 			yield return new WaitForSeconds(this.AttackDuration);
@@ -359,12 +362,13 @@
 			this.isCoolingDown = true;
 			this.gamePhysics.SetMovement(new Vector2(x, y) * this.MaxSpeed);
 			this.attackDamageField.SetActive(false);
+			this.injectionField.SetActive(false);
 			this.animator.Play(IdleAnimation);
-			StartCoroutine(RemoveCooldown());
+			StartCoroutine(WaitForCooldownEnd());
 		}
 
 
-		private IEnumerator RemoveCooldown()
+		private IEnumerator WaitForCooldownEnd()
 		{
 			yield return new WaitForSeconds(this.AttackCooldown);
 

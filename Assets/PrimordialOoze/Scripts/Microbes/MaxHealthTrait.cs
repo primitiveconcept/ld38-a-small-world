@@ -6,6 +6,14 @@
 	[Serializable]
 	public class MaxHealthTrait : MicrobeTrait
 	{
+		#region Properties
+		public override TraitType Type
+		{
+			get { return TraitType.MaxHealth; }
+		}
+		#endregion
+
+
 		public override void Activate()
 		{
 			// TODO: Change map size.

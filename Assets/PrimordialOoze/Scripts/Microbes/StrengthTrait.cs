@@ -6,6 +6,14 @@
 	[Serializable]
 	public class StrengthTrait : MicrobeTrait
 	{
+		#region Properties
+		public override TraitType Type
+		{
+			get { return TraitType.Strength; }
+		}
+		#endregion
+
+
 		public override void Activate()
 		{
 			this.MicrobeData.Strength += this.Value;

@@ -30,10 +30,10 @@
 
 		public void DoDamage(Collider2D target)
 		{
-			Microbe microbe = target.GetComponent<Microbe>();
+			Microbe targetMicrobe = target.GetComponent<Microbe>();
 
 			if (target == null
-				|| microbe == null)
+				|| targetMicrobe == null)
 			{
 				return;
 			}
@@ -43,11 +43,14 @@
 
 			if (target.gameObject == this.owner)
 				return;
-
+			
 			GamePhysics ownerPhysics = this.owner.GetComponent<GamePhysics>();
 			GamePhysics targetPhysics = target.GetComponent<GamePhysics>();
 			ownerPhysics.SetMovement(Vector2.zero);
 			targetPhysics.SetMovement(Vector2.zero);
+
+			if (targetMicrobe.GetCurrentHealthPercent() <= 0.5f)
+				targetMicrobe.OnInjected();
 
 			// Instantiate effect if there is one.
 			if (this.damageEffect != null)

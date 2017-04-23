@@ -42,6 +42,7 @@
 		private int currentHealth;
 
 		private MapData internalMap;
+		private MicrobeData parentMicrobe;
 
 
 		#region Properties
@@ -110,6 +111,13 @@
 		{
 			get { return this.maxSpeed; }
 			set { this.maxSpeed = value; }
+		}
+
+
+		public MicrobeData ParentMicrobe
+		{
+			get { return this.parentMicrobe; }
+			set { this.parentMicrobe = value; }
 		}
 
 
