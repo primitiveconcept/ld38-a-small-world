@@ -6,7 +6,7 @@
 
 	public class GamePhysics : MonoBehaviour
 	{
-		private Rigidbody2D rigidbody2D;
+		private new Rigidbody2D rigidbody2D;
 		private Vector2 forcesApplied;
 		private Vector2 positionLastFrame;
 

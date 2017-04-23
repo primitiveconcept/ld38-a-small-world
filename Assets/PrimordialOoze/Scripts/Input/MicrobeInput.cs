@@ -28,10 +28,18 @@
 		}
 
 
+		public virtual void ProcessAttackInput()
+		{
+		}
+
+
 		public virtual void Update()
 		{
-			if (!this.locked)
-				ProcessDirectionalInput();
+			if (this.locked)
+				return;
+
+			ProcessDirectionalInput();
+			ProcessAttackInput();
 		}
 	}
 }

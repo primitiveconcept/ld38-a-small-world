@@ -5,7 +5,7 @@
 
 	public class EnemyMicrobeInput : MicrobeInput
 	{
-		private Collider2D collider;
+		private new Collider2D collider;
 
 
 		public override void Awake()

@@ -56,6 +56,7 @@
 
 		public void Start()
 		{
+			this.sightUI.gameObject.SetActive(true);
 			this.sightUI.UpdateSight(this.PlayerMicrobe.SightDistance);
 		}
 
