@@ -2,33 +2,94 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using Assets.PrimordialOoze.Scripts.Extensions.Vectors;
+	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 
 
 	public class GameMap : MonoBehaviour
 	{
-		[SerializeField]
-		private int perimeterRadius = 20;
+		public const float NucleusToHealthRatio = 0.1f;
+		public const float PerimeterToHealthRatio = 0.2f;
 
 		[SerializeField]
-		private int nucleusSize = 10;
+		private Microbe microbePrefab;
 
 		[SerializeField]
-		private MazeCell wallPrefab;
+		private MapCell wallPrefab;
 
 		[SerializeField]
-		private MazeCell destroyableWallPrefab;
+		private MapCell destroyableWallPrefab;
 
-		private MazeCell[,] mazeCells;
-		private MazeCell[] perimeterCells;
+		[SerializeField]
+		private MicrobeTraitToggle[] traitPrefabs;
+
+		private MicrobeData currentMicrobe;
+		private MapCell[,] nucleusCells;
+		private MapCell[] perimeterCells;
+		private Microbe[] microbes;
 
 
-		public enum CellType
+		#region Properties
+		public MicrobeData CurrentMicrobe
 		{
-			Empty = 0,
-			Wall = 1,
-			DestroyableWall = 2
+			get { return this.currentMicrobe; }
+		}
+
+
+		private int NucleusSize
+		{
+			get
+			{
+				return (int)(this.currentMicrobe.MaxHealth
+							* NucleusToHealthRatio);
+			}
+		}
+
+
+		private int PerimeterRadius
+		{
+			get
+			{
+				return (int)(this.currentMicrobe.MaxHealth
+							* PerimeterToHealthRatio);
+			}
+		}
+
+
+		public Microbe[] Microbes
+		{
+			get { return this.microbes; }
+		}
+		#endregion
+
+
+		public void ClearMicrobes()
+		{
+			if (this.microbes == null)
+				return;
+
+			for (int i = 0; i < this.microbes.Length; i++)
+			{
+				if (this.microbes[i] != null)
+					Destroy(this.microbes[i].gameObject);
+				else
+				{
+					Debug.Log("Was null?");
+				}
+			}
+		}
+
+
+		public void ClearNucleus()
+		{
+			if (this.nucleusCells == null)
+				return;
+
+			foreach (MapCell cell in this.nucleusCells)
+			{
+				if (cell != null)
+					Destroy(cell.gameObject);
+			}
 		}
 
 
@@ -37,7 +98,7 @@
 			if (this.perimeterCells == null)
 				return;
 
-			foreach (var cell in this.perimeterCells)
+			foreach (MapCell cell in this.perimeterCells)
 			{
 				if (cell != null)
 					Destroy(cell.gameObject);
@@ -45,110 +106,133 @@
 		}
 
 
-		public void ClearMaze()
+		public void GenerateNewMap()
 		{
-			if (this.mazeCells == null)
-				return;
+			GenerateNucleus();
+			GeneratePerimeter();
+			GenerateMicrobes();
+		}
 
-			foreach (var cell in this.mazeCells)
+
+		private void GenerateNucleus()
+		{
+			ClearNucleus();
+
+			Maze baseMaze = new Maze(this.NucleusSize);
+			this.nucleusCells = new MapCell[this.NucleusSize, this.NucleusSize];
+
+			for (int x = 0; x < this.NucleusSize; x++)
 			{
-				if (cell != null)
-					Destroy(cell.gameObject);
+				for (int y = 0; y < this.NucleusSize; y++)
+				{
+					if (baseMaze[x, y] != 0)
+					{
+						this.nucleusCells[x, y] = CreateCell(
+							x,
+							y,
+							(MapCell.Type)baseMaze[x, y],
+							new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f));
+					}
+				}
 			}
 		}
 
+
+		public void GenerateMicrobes()
+		{
+			ClearMicrobes();
+			var internalMap = this.currentMicrobe.InternalMap;
+			int numberOfMicrobes = internalMap.Microbes.Count;
+			this.microbes = new Microbe[numberOfMicrobes];
+			for (int i = 0; i < numberOfMicrobes; i++)
+			{
+				this.microbes[i] = Instantiate(this.microbePrefab);
+				this.microbes[i].Data = internalMap.Microbes[i];
+			}
+		}
 
 		public void GeneratePerimeter()
 		{
 			ClearPerimeter();
 
 			int x, y, r2;
-			List<MazeCell> cells = new List<MazeCell>();
-			int radius = this.perimeterRadius;
-			int center = this.perimeterRadius;
-			r2 = this.perimeterRadius * this.perimeterRadius;
-			
-			cells.Add(CreateCell(center, center + radius, CellType.Wall));
-			cells.Add(CreateCell(center, center - radius, CellType.Wall));
-			cells.Add(CreateCell(center + center, center, CellType.Wall));
-			cells.Add(CreateCell(center - center, center, CellType.Wall));
+			List<MapCell> cells = new List<MapCell>();
+			int radius = this.PerimeterRadius;
+			int center = this.PerimeterRadius;
+			r2 = this.PerimeterRadius * this.PerimeterRadius;
+
+			cells.Add(CreateCell(center, center + radius, MapCell.Type.Wall));
+			cells.Add(CreateCell(center, center - radius, MapCell.Type.Wall));
+			cells.Add(CreateCell(center + center, center, MapCell.Type.Wall));
+			cells.Add(CreateCell(center - center, center, MapCell.Type.Wall));
 
 			y = radius;
 			x = 1;
 			y = (int)(Math.Sqrt(r2 - 1) + 0.5);
 			while (x < y)
 			{
-				cells.Add(CreateCell(center + x, center + y, CellType.Wall));
-				cells.Add(CreateCell(center + x, center - y, CellType.Wall));
-				cells.Add(CreateCell(center - x, center + y, CellType.Wall));
-				cells.Add(CreateCell(center - x, center - y, CellType.Wall));
-				cells.Add(CreateCell(center + y, center + x, CellType.Wall));
-				cells.Add(CreateCell(center + y, center - x, CellType.Wall));
-				cells.Add(CreateCell(center - y, center + x, CellType.Wall));
-				cells.Add(CreateCell(center - y, center - x, CellType.Wall));
+				cells.Add(CreateCell(center + x, center + y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + x, center - y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - x, center + y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - x, center - y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + y, center + x, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + y, center - x, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - y, center + x, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - y, center - x, MapCell.Type.Wall));
 				x += 1;
 				y = (int)(Math.Sqrt(r2 - x * x) + 0.5);
 			}
 			if (x == y)
 			{
-				cells.Add(CreateCell(center + x, center + y, CellType.Wall));
-				cells.Add(CreateCell(center + x, center - y, CellType.Wall));
-				cells.Add(CreateCell(center - x, center + y, CellType.Wall));
-				cells.Add(CreateCell(center - x, center - y, CellType.Wall));
+				cells.Add(CreateCell(center + x, center + y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + x, center - y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - x, center + y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center - x, center - y, MapCell.Type.Wall));
 			}
 
 			this.perimeterCells = cells.ToArray();
 		}
 
-		public void GenerateNewMap()
+
+		public void LoadMapData(MapData mapData)
 		{
-			ClearMaze();
-			GeneratePerimeter();
-
-			Maze baseMaze = new Maze(this.nucleusSize);
-			this.mazeCells = new MazeCell[this.nucleusSize, this.nucleusSize];
-
-			for (int x = 0; x < this.nucleusSize; x++)
+			foreach (var microbe in mapData.Microbes)
 			{
-				for (int y = 0; y < this.nucleusSize; y++)
-				{
-					if (baseMaze[x, y] != 0)
-					{
-						this.mazeCells[x, y] = CreateCell(
-							x, y,
-							(CellType)baseMaze[x, y],
-							new Vector2(this.perimeterRadius * 0.75f, this.perimeterRadius * 0.75f));
-					}
-				}
+				
 			}
-
-			
 		}
 
 
-		public void Start()
+		public MapData SaveMapData()
 		{
+			return null;
+		}
+
+
+		public void SetCurrentMicrobe(MicrobeData microbeData)
+		{
+			this.currentMicrobe = microbeData;
 			GenerateNewMap();
+			LoadMapData(microbeData.InternalMap);
 		}
 
 
 		#region Helper Methods
-		private MazeCell CreateCell(int x, int y, CellType type, Vector2? offset = null)
+		private MapCell CreateCell(int x, int y, MapCell.Type type, Vector2? offset = null)
 		{
-			MazeCell newCell;
+			MapCell newCell;
 
-			if (type == CellType.Wall)
+			if (type == MapCell.Type.Wall)
 				newCell = Instantiate(this.wallPrefab);
-			else if (type == CellType.DestroyableWall)
+			else if (type == MapCell.Type.DestroyableWall)
 				newCell = Instantiate(this.destroyableWallPrefab);
 			else
 				return null;
 
-
 			newCell.transform.parent = this.transform;
 			newCell.transform.localPosition = new Vector3(
-				x - this.nucleusSize * 0.5f + 0.5f,
-				y - this.nucleusSize * 0.5f + 0.5f,
+				x - this.NucleusSize * 0.5f + 0.5f,
+				y - this.NucleusSize * 0.5f + 0.5f,
 				0);
 			if (offset != null)
 			{
@@ -179,6 +263,7 @@ namespace PrimordialOoze
 	{
 		private GameMap gameMap;
 
+
 		public override void OnInspectorGUI()
 		{
 			base.OnInspectorGUI();
@@ -196,5 +281,6 @@ namespace PrimordialOoze
 		}
 	}
 }
+
 #endif
 #endregion

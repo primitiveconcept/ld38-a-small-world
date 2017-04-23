@@ -23,6 +23,7 @@ Let MonoDevelop and Visual Studio handle their own stuff.
 /.vs
 *.orig*
 *.log*
+/WorkFiles
 
 ===
 Restricted Third-Party Assets

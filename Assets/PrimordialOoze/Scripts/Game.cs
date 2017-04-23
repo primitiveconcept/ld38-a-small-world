@@ -10,6 +10,9 @@
 		[SerializeField]
 		private SightUI sightUI;
 
+		[SerializeField]
+		private GameMap gameMap;
+
 
 		#region Properties
 		/// <summary>
@@ -31,6 +34,17 @@
 					}
 				}
 				return _instance;
+			}
+		}
+
+
+		public GameMap GameMap
+		{
+			get
+			{
+				if (this.gameMap == null)
+					this.gameMap = FindObjectOfType<GameMap>();
+				return this.gameMap;
 			}
 		}
 

@@ -3,9 +3,11 @@
 	using UnityEngine;
 
 
-	public class MazeCell : MonoBehaviour,
+	public class MapCell : MonoBehaviour,
 							IDamageable
 	{
+
+
 		[SerializeField]
 		private int currentHealth;
 
@@ -20,6 +22,13 @@
 
 		[SerializeField]
 		private float invulnerabilityTimeLeft;
+
+		public enum Type
+		{
+			Empty = 0,
+			Wall = 1,
+			DestroyableWall = 2
+		}
 
 
 		#region Properties
@@ -57,6 +66,12 @@
 			private set { this.maxHealth = value; }
 		}
 		#endregion
+
+
+		public void Update()
+		{
+			this.CountdownInvulnerabilityTimeLeft();
+		}
 
 
 		public int TakeDamage(int amount)

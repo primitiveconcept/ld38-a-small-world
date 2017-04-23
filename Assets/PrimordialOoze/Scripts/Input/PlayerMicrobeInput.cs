@@ -1,14 +1,14 @@
 ﻿namespace PrimordialOoze
 {
-	using Assets.PrimordialOoze.Scripts.Extensions.Vectors;
+	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 	using UnityStandardAssets.CrossPlatformInput;
-	using MonoBehaviour = UnityEngine.MonoBehaviour;
-
+	
 
 	public class PlayerMicrobeInput : MicrobeInput
 	{
 		public const string Fire1 = "Fire1";
+		public const string Fire2 = "Fire2";
 		public const string HorizontalAxis = "Horizontal";
 		public const string VerticalAxis = "Vertical";
 
@@ -31,7 +31,8 @@
 
 		public override void ProcessAttackInput()
 		{
-			if (CrossPlatformInputManager.GetButtonDown(Fire1))
+			if (CrossPlatformInputManager.GetButtonDown(Fire1)
+				|| CrossPlatformInputManager.GetButtonDown(Fire2))
 			{
 				Vector3 target = new Vector3(
 					CrossPlatformInputManager.GetAxisRaw(HorizontalAxis),
@@ -44,8 +45,17 @@
 					target = (MousePosition - this.transform.position).normalized;
 				}
 
-				Debug.Log("Attack: " + target.x + ", " + target.y);
-				this.Microbe.Attack(target.x, target.y);
+				if (CrossPlatformInputManager.GetButtonDown(Fire2))
+				{
+					Debug.Log("Inject: " + target.x + ", " + target.y);
+					this.Microbe.Inject(target.x, target.y);
+				}
+				else
+				{
+					Debug.Log("Attack: " + target.x + ", " + target.y);
+					this.Microbe.Attack(target.x, target.y);
+				}
+				
 			}
 		}
 

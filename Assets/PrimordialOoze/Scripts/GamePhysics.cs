@@ -1,6 +1,6 @@
 ﻿namespace PrimordialOoze
 {
-	using Assets.PrimordialOoze.Scripts.Extensions.Vectors;
+	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 
 
