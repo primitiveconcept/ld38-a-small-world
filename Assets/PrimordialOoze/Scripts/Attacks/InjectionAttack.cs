@@ -24,6 +24,7 @@
 
 			this.Microbe.RotateAwayFrom(x, y);
 			this.Microbe.IsAttacking = true;
+			this.Microbe.InvulnerabilityTimeLeft = 0.5f;
 			this.Microbe.Animator.Play(Microbe.AttackAnimation);
 			this.Microbe.GamePhysics.SetMovement(
 				new Vector2(x, y).normalized
@@ -50,6 +51,7 @@
 
 		public void OnInjectionSuccess(Microbe targetMicrobe)
 		{
+			this.Microbe.InvulnerabilityTimeLeft = 1f;
 			this.Microbe.Animator.Play(Microbe.InjectAnimation);
 			this.WaitForSeconds(
 				0.5f,

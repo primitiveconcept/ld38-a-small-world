@@ -27,18 +27,6 @@
 						.SetZ(0));
 			}
 		}
-
-
-		public PrimaryAttack PrimaryAttack
-		{
-			get { return GetComponent<PrimaryAttack>(); }
-		}
-
-
-		public SecondaryAttack SecondaryAttack
-		{
-			get { return GetComponent<SecondaryAttack>(); }
-		}
 		#endregion
 
 

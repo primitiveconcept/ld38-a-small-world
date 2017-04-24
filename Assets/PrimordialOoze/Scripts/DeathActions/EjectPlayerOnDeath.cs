@@ -1,5 +1,8 @@
 ﻿namespace PrimordialOoze
 {
+	using PrimordialOoze.Extensions.Coroutines;
+
+
 	public class EjectPlayerOnDeath : OnDeathAction
 	{
 		private Microbe microbe;
@@ -18,7 +21,12 @@
 			if (GetComponent<PlayerMicrobeInput>() != null)
 				Instantiate(Game.PlayerPrefab);
 
-			Destroy(this.gameObject);
+			this.microbe.Animator.Play(Microbe.DeathAnimation);
+			this.WaitForSeconds(0.5f,
+				() =>
+					{
+						Destroy(this.gameObject);
+					});
 		}
 	}
 }

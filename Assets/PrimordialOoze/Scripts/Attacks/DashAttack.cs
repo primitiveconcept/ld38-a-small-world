@@ -29,6 +29,7 @@
 
 			this.attackDamageField.Damage = this.Microbe.Strength;
 			this.Microbe.IsAttacking = true;
+			this.Microbe.InvulnerabilityTimeLeft = 0.5f;
 			this.Microbe.Animator.Play(Microbe.AttackAnimation);
 			this.Microbe.GamePhysics.SetMovement(
 				new Vector2(x, y).normalized
@@ -43,7 +44,21 @@
 			base.Awake();
 
 			if (this.attackDamageField != null)
+			{
 				this.attackDamageField.gameObject.SetActive(false);
+				var contactDamage = this.attackDamageField.GetComponent<ContactDamage>();
+				if (contactDamage != null)
+					contactDamage.DidDamage += Recoil;
+			}
+		}
+
+
+		private void Recoil()
+		{
+			Vector2 direction = this.Microbe.GamePhysics.Velocity * -1;
+			this.Microbe.GamePhysics.SetMovement(
+				direction.normalized
+				* (this.Microbe.AttackSpeed + this.Microbe.MaxSpeed));
 		}
 
 

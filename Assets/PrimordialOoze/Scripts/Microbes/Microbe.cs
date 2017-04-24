@@ -12,6 +12,7 @@
 		public const string AttackAnimation = "Attack";
 		public const string IdleAnimation = "Idle";
 		public const string InjectAnimation = "Inject";
+		public const string DeathAnimation = "Death";
 
 		[SerializeField]
 		private MicrobeData data;
@@ -34,6 +35,7 @@
 		private SpriteRenderer spriteRenderer;
 		private Animator animator;
 		private GamePhysics gamePhysics;
+		private Color originalColor;
 		private Vector3 originalScale;
 		private bool isMoving;
 		private bool isAttacking;
@@ -44,6 +46,12 @@
 
 
 		#region Properties
+		public Color OriginalColor
+		{
+			get { return this.originalColor; }
+		}
+
+
 		public float Acceleration
 		{
 			get { return this.data.Acceleration; }
@@ -231,6 +239,7 @@
 			this.animator = GetComponentInChildren<Animator>();
 			this.gamePhysics = GetComponent<GamePhysics>();
 			this.originalScale = this.transform.localScale;
+			this.originalColor = this.spriteRenderer.color;
 			this.CurrentHealth = this.MaxHealth;
 			this.Killed += OnKilled;
 			Initialize();
@@ -340,7 +349,10 @@
 			if (amount > 0)
 			{
 				StartCoroutine(this.spriteRenderer.Flicker(
-					Color.clear, this.spriteRenderer.color));
+					Color.clear, 
+					this.originalColor, 
+					UpdateOpacity,
+					this.invulnerabilityDuration));
 
 				if (this.Damaged != null)
 					this.Damaged(this);
@@ -381,7 +393,7 @@
 		private void UpdateOpacity()
 		{
 			float alpha = 0.25f + (this.GetCurrentHealthPercent() * 0.75f);
-			this.spriteRenderer.color = this.spriteRenderer.color.SetAlpha(alpha);
+			this.spriteRenderer.color = this.originalColor.SetAlpha(alpha);
 		}
 
 

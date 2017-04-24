@@ -87,7 +87,7 @@
 			if (amount > 0)
 			{
 				StartCoroutine(this.spriteRenderer.Flicker(
-					Color.red, this.spriteRenderer.color));
+					Color.red, this.spriteRenderer.color, null));
 
 				if (this.Damaged != null)
 					this.Damaged(this);

@@ -1,5 +1,6 @@
 ﻿namespace PrimordialOoze.Extensions.Colors
 {
+	using System;
 	using System.Collections;
 	using UnityEngine;
 
@@ -16,9 +17,12 @@
 			this SpriteRenderer spriteRenderer,
 			Color flickerColor,
 			Color originalColor,
+			Action callback,
+			float flickerDuration = 0.125f,
 			float flickerSpeed = 0.025f)
 		{
-			for (int i = 0; i < 5; i++)
+			int iterations = (int)(flickerDuration / flickerSpeed);
+			for (int i = 0; i < iterations; i++)
 			{
 				spriteRenderer.color = originalColor;
 				yield return new WaitForSeconds(flickerSpeed);
@@ -27,6 +31,8 @@
 			}
 
 			spriteRenderer.color = originalColor;
+			if (callback != null)
+				callback();
 		}
 	}
 }

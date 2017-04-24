@@ -24,6 +24,9 @@
 		private GameObject owner;
 
 
+		public event Action DidDamage;
+
+
 		#region Properties
 		public LayerMask CollisionMask
 		{
@@ -90,6 +93,9 @@
 					target.transform.position,
 					target.transform.rotation);
 			}
+
+			if (this.DidDamage != null)
+				this.DidDamage();
 		}
 
 

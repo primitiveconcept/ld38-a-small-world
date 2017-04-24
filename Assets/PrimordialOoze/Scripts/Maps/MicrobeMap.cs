@@ -255,6 +255,7 @@
 					.GetComponent<MicrobeTraitToggle>();
 				//Instantiate(this.traitPrefabs[(int)data.Type], this.transform);
 				this.traits[i].Data = data;
+				this.traits[i].UpdateSprite();
 			}
 		}
 

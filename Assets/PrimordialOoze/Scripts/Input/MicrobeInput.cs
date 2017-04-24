@@ -16,6 +16,18 @@
 		{
 			get { return this.microbe; }
 		}
+
+
+		public PrimaryAttack PrimaryAttack
+		{
+			get { return GetComponent<PrimaryAttack>(); }
+		}
+
+
+		public SecondaryAttack SecondaryAttack
+		{
+			get { return GetComponent<SecondaryAttack>(); }
+		}
 		#endregion
 
 
