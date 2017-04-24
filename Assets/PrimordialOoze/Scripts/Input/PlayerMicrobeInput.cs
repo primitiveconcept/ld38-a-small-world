@@ -10,6 +10,7 @@
 		public const string Fire1 = "Fire1";
 		public const string Fire2 = "Fire2";
 		public const string HorizontalAxis = "Horizontal";
+		public const string MouseScrollwheel = "Mouse ScrollWheel";
 		public const string VerticalAxis = "Vertical";
 
 
@@ -89,6 +90,32 @@
 			}
 
 			this.Microbe.Move(xMovement, yMovement);
+		}
+
+
+		public void ProcessMicrobeScalerInput()
+		{
+			float mouseWheel = CrossPlatformInputManager.GetAxis(MouseScrollwheel);
+			if (mouseWheel == 0)
+				return;
+
+			Debug.Log(mouseWheel);
+
+			MicrobeScaler microbeScaler = GetComponent<MicrobeScaler>();
+			if (microbeScaler == null)
+				return;
+
+			mouseWheel = mouseWheel * Game.MicrobeMap.transform.localScale.x;
+
+			microbeScaler.ChangeScale(1 + mouseWheel);
+		}
+
+
+		public override void Update()
+		{
+			base.Update();
+
+			ProcessMicrobeScalerInput();
 		}
 	}
 }

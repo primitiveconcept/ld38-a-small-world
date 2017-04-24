@@ -16,13 +16,31 @@
 
 		public override void Activate()
 		{
-			this.MicrobeData.Strength += this.Value;
+			IncreaseMicrobeStats(this.MicrobeData);
 		}
 
 
 		public override void Deactivate()
 		{
-			this.MicrobeData.Strength -= this.Value;
+			DecreaseMicrobeStats(this.MicrobeData);
 		}
+
+
+		#region Helper Methods
+		private void DecreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.Strength -= this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				DecreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+
+
+		private void IncreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.Strength += this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				IncreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+		#endregion
 	}
 }

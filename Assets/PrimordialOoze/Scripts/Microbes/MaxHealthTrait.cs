@@ -16,15 +16,40 @@
 
 		public override void Activate()
 		{
-			// TODO: Change map size.
-			this.MicrobeData.MaxHealth += this.Value;
+			IncreaseMicrobeStats(this.MicrobeData);
+			ResizeMap();
 		}
 
 
 		public override void Deactivate()
 		{
-			// TODO: Change map size.
-			this.MicrobeData.MaxHealth -= this.Value;
+			DecreaseMicrobeStats(this.MicrobeData);
+			ResizeMap();
 		}
+
+
+		#region Helper Methods
+		private void DecreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.MaxHealth -= (this.Value * 5);
+			if (microbeData.ParentMicrobeData != null)
+				DecreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+
+
+		private void IncreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.MaxHealth += (this.Value * 5);
+			if (microbeData.ParentMicrobeData != null)
+				IncreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+
+
+		private void ResizeMap()
+		{
+			Game.MicrobeMap.ClearPerimeters();
+			Game.MicrobeMap.RegeneratePerimeter();
+		}
+		#endregion
 	}
 }

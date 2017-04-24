@@ -10,8 +10,6 @@
 							IDamageable
 	{
 		public const string AttackAnimation = "Attack";
-		public const string CameraIdleAnimation = "CameraIdle";
-		public const string CameraZoomInAnimation = "CameraZoomIn";
 		public const string IdleAnimation = "Idle";
 		public const string InjectAnimation = "Inject";
 
@@ -22,10 +20,16 @@
 		private bool isInvulnerable;
 
 		[SerializeField]
-		private float invulnerabilityDuration = 2;
+		private float invulnerabilityDuration = 0.5f;
 
 		[SerializeField]
 		private float invulnerabilityTimeLeft;
+
+		[SerializeField]
+		private bool orientMovement = false;
+
+		[SerializeField]
+		private bool attacksBackward = false;
 
 		private SpriteRenderer spriteRenderer;
 		private Animator animator;
@@ -64,6 +68,13 @@
 		{
 			get { return this.data.AttackDuration; }
 			set { this.data.AttackDuration = value; }
+		}
+
+
+		public bool AttacksBackward
+		{
+			get { return this.attacksBackward; }
+			set { this.attacksBackward = value; }
 		}
 
 
@@ -154,7 +165,11 @@
 		public int MaxHealth
 		{
 			get { return this.data.MaxHealth; }
-			private set { this.data.MaxHealth = value; }
+			private set
+			{
+				this.data.MaxHealth = value;
+				UpdateScale();
+			}
 		}
 
 
@@ -162,6 +177,13 @@
 		{
 			get { return this.data.MaxSpeed; }
 			set { this.data.MaxSpeed = value; }
+		}
+
+
+		public bool OrientMovement
+		{
+			get { return this.orientMovement; }
+			set { this.orientMovement = value; }
 		}
 
 
@@ -192,6 +214,17 @@
 		#endregion
 
 
+		public static Vector3 GetScaleForMaxHealth(
+			Vector3 originalScale,
+			int maxHealth)
+		{
+			float scalar = maxHealth / 100f;
+			Vector3 scale = originalScale * scalar;
+
+			return scale;
+		}
+
+
 		public void Awake()
 		{
 			this.spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -200,6 +233,7 @@
 			this.originalScale = this.transform.localScale;
 			this.CurrentHealth = this.MaxHealth;
 			this.Killed += OnKilled;
+			Initialize();
 		}
 
 
@@ -215,6 +249,15 @@
 				this.gamePhysics.SetMovement(newSpeed);
 			}
 
+			if (this.orientMovement
+				&& this.isMoving
+				&& !this.isAttacking)
+			{
+				RotateToward(
+					this.gamePhysics.Velocity.x,
+					this.gamePhysics.Velocity.y);
+			}
+
 			this.isMoving = false;
 		}
 
@@ -222,6 +265,7 @@
 		public void Initialize()
 		{
 			UpdateOpacity();
+			UpdateScale();
 		}
 
 
@@ -276,11 +320,28 @@
 		}
 
 
+		public void RotateAwayFrom(float x, float y)
+		{
+			float zRotation = Mathf.Atan2(-y, -x) * Mathf.Rad2Deg;
+			transform.localRotation = Quaternion.Euler(0f, 0f, zRotation - 90);
+		}
+
+
+		public void RotateToward(float x, float y)
+		{
+			float zRotation = Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+			transform.localRotation = Quaternion.Euler(0f, 0f, zRotation - 90);
+		}
+
+
 		public int TakeDamage(int amount)
 		{
 			amount = this.DeductHealth(amount);
 			if (amount > 0)
 			{
+				StartCoroutine(this.spriteRenderer.Flicker(
+					Color.clear, this.spriteRenderer.color));
+
 				if (this.Damaged != null)
 					this.Damaged(this);
 
@@ -302,6 +363,12 @@
 		}
 
 
+		public void UpdateCameraBasedOnScaled()
+		{
+			Camera.main.orthographicSize = 15 * this.transform.localScale.x;
+		}
+
+
 		public IEnumerator WaitForCooldownEnd()
 		{
 			yield return new WaitForSeconds(this.AttackCooldown);
@@ -313,8 +380,18 @@
 		#region Helper Methods
 		private void UpdateOpacity()
 		{
-			float alpha = 0.5f + (this.GetCurrentHealthPercent() / 2);
+			float alpha = 0.25f + (this.GetCurrentHealthPercent() * 0.75f);
 			this.spriteRenderer.color = this.spriteRenderer.color.SetAlpha(alpha);
+		}
+
+
+		private void UpdateScale()
+		{
+			this.transform.localScale =
+				GetScaleForMaxHealth(this.originalScale, this.MaxHealth);
+
+			if (GetComponent<PlayerMicrobeInput>() != null)
+				UpdateCameraBasedOnScaled();
 		}
 		#endregion
 	}

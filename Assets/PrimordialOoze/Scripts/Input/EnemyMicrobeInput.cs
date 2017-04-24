@@ -29,14 +29,14 @@
 			int targetsHit = collider.Raycast(
 				playerDirection,
 				hits,
-				this.Microbe.SightDistance);
+				this.Microbe.SightDistance * 5);
 
 			if (targetsHit > 0
 				&& hits[0].transform == player.transform)
 			{
 				Debug.DrawRay(
 					this.transform.position,
-					playerDirection.normalized * this.Microbe.SightDistance,
+					playerDirection.normalized * this.Microbe.SightDistance * 5,
 					Color.red);
 				this.Microbe.Move(playerDirection.normalized);
 			}
@@ -44,7 +44,7 @@
 			{
 				Debug.DrawRay(
 					this.transform.position,
-					playerDirection * this.Microbe.SightDistance,
+					playerDirection * this.Microbe.SightDistance * 5,
 					Color.yellow);
 			}
 		}

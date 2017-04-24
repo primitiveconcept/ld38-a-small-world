@@ -66,7 +66,7 @@
 
 		private void PopulateNewMicrobes(MicrobeData parent)
 		{
-			int numberOfMicrobes = (int)Math.Ceiling(parent.MaxHealth / 25f);
+			int numberOfMicrobes = (int)Math.Floor(parent.MaxHealth / 30f);
 			if (this.microbes != null)
 				this.microbes.Clear();
 			else
@@ -83,7 +83,7 @@
 
 		private void PopulateNewTraits(MicrobeData parent)
 		{
-			int numberOfTraits = (int)Math.Ceiling(parent.MaxHealth / 25f);
+			int numberOfTraits = (int)Math.Ceiling(parent.MaxHealth / 30f);
 			this.traits = new MicrobeTrait[numberOfTraits];
 			for (int i = 0; i < numberOfTraits; i++)
 			{

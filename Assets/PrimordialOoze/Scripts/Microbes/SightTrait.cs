@@ -6,20 +6,41 @@
 	[Serializable]
 	public class SightTrait : MicrobeTrait
 	{
+		#region Properties
 		public override TraitType Type
 		{
 			get { return TraitType.Sight; }
 		}
+		#endregion
+
 
 		public override void Activate()
 		{
-			this.MicrobeData.SightDistance += this.Value;
+			IncreaseMicrobeStats(this.MicrobeData);
 		}
 
 
 		public override void Deactivate()
 		{
-			this.MicrobeData.SightDistance -= this.Value;
+			DecreaseMicrobeStats(this.MicrobeData);
 		}
+
+
+		#region Helper Methods
+		private void DecreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.SightDistance -= this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				DecreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+
+
+		private void IncreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.SightDistance += this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				IncreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+		#endregion
 	}
 }

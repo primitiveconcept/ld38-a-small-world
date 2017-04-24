@@ -45,13 +45,14 @@
 				this.owner.OnInjectionFailure();
 				return;
 			}
-			
+
 			GamePhysics ownerPhysics = this.owner.GetComponent<GamePhysics>();
 			GamePhysics targetPhysics = target.GetComponent<GamePhysics>();
 			ownerPhysics.SetMovement(Vector2.zero);
 			targetPhysics.SetMovement(Vector2.zero);
 
-			if (targetMicrobe.GetCurrentHealthPercent() <= 0.5f)
+			if (targetMicrobe.GetCurrentHealthPercent() <= 0.5f
+				&& this.owner.transform.localScale.x <= target.transform.localScale.x / 2)
 			{
 				this.owner.OnInjectionSuccess(targetMicrobe);
 			}
@@ -59,6 +60,9 @@
 			{
 				this.owner.OnInjectionFailure();
 			}
+
+			if (this.owner != null)
+				this.gameObject.SetActive(false);
 
 			// Instantiate effect if there is one.
 			if (this.damageEffect != null)

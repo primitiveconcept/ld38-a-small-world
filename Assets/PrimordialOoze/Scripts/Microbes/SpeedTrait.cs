@@ -16,15 +16,33 @@
 
 		public override void Activate()
 		{
-			this.MicrobeData.Acceleration += this.Value;
-			this.MicrobeData.MaxSpeed += this.Value;
+			IncreaseMicrobeStats(this.MicrobeData);
 		}
 
 
 		public override void Deactivate()
 		{
-			this.MicrobeData.Acceleration -= this.Value;
-			this.MicrobeData.MaxSpeed -= this.Value;
+			DecreaseMicrobeStats(this.MicrobeData);
 		}
+
+
+		#region Helper Methods
+		private void DecreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.Acceleration -= this.Value;
+			microbeData.MaxSpeed -= this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				DecreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+
+
+		private void IncreaseMicrobeStats(MicrobeData microbeData)
+		{
+			microbeData.Acceleration += this.Value;
+			microbeData.MaxSpeed += this.Value;
+			if (microbeData.ParentMicrobeData != null)
+				IncreaseMicrobeStats(microbeData.ParentMicrobeData);
+		}
+		#endregion
 	}
 }

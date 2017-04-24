@@ -79,6 +79,8 @@
 
 			// Deal damage.
 			damageable.TakeDamage(this.damage);
+			if (this.owner != null)
+				this.gameObject.SetActive(false);
 
 			// Instantiate effect if there is one.
 			if (this.damageEffect != null)

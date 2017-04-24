@@ -11,6 +11,9 @@
 		private SightUI sightUI;
 
 		[SerializeField]
+		private GameObject bubblesEffect;
+
+		[SerializeField]
 		private MicrobeMap microbeMap;
 
 		[SerializeField]
@@ -18,6 +21,12 @@
 
 
 		#region Properties
+		public static GameObject BubblesEffect
+		{
+			get { return Instance.bubblesEffect; }
+		}
+
+
 		/// <summary>
 		/// Singleton design pattern
 		/// </summary>

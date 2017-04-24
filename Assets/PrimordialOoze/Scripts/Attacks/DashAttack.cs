@@ -19,6 +19,14 @@
 				return;
 			}
 
+			if (this.Microbe.OrientMovement)
+			{
+				if (this.Microbe.AttacksBackward)
+					this.Microbe.RotateAwayFrom(x, y);
+				else
+					this.Microbe.RotateToward(x, y);
+			}
+
 			this.attackDamageField.Damage = this.Microbe.Strength;
 			this.Microbe.IsAttacking = true;
 			this.Microbe.Animator.Play(Microbe.AttackAnimation);

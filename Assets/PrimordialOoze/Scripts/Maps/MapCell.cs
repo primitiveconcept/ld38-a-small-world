@@ -1,6 +1,7 @@
 ﻿namespace PrimordialOoze
 {
 	using System;
+	using PrimordialOoze.Extensions.Colors;
 	using UnityEngine;
 
 
@@ -21,6 +22,8 @@
 
 		[SerializeField]
 		private float invulnerabilityTimeLeft;
+
+		private SpriteRenderer spriteRenderer;
 
 		public event Action<IDamageable> Damaged;
 		public event Action Killed;
@@ -72,11 +75,20 @@
 		#endregion
 
 
+		public void Awake()
+		{
+			this.spriteRenderer = GetComponent<SpriteRenderer>();
+		}
+
+
 		public int TakeDamage(int amount)
 		{
 			amount = this.DeductHealth(amount);
 			if (amount > 0)
 			{
+				StartCoroutine(this.spriteRenderer.Flicker(
+					Color.red, this.spriteRenderer.color));
+
 				if (this.Damaged != null)
 					this.Damaged(this);
 

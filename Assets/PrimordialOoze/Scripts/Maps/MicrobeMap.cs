@@ -16,15 +16,15 @@
 		private Microbe microbePrefab;
 
 		[SerializeField]
-		private MapCell[] mapCellPrefabs; // Must sort according to type enum.
+		private GameObject[] mapCellPrefabs; // Must sort according to type enum.
 
 		[SerializeField]
-		private MicrobeTraitToggle[] traitPrefabs;
+		private GameObject[] traitPrefabs;
 
 		private MicrobeData currentMicrobe;
 		private MicrobeData previousMicrobe;
-		private MapCell[,] nucleusCells;
-		private List<MapCell> perimeterCells;
+		private GameObject[,] nucleusCells;
+		private List<GameObject> perimeterCells;
 		private Microbe[] microbes;
 		private MicrobeTraitToggle[] traits; // Must sort according to type enum.
 
@@ -81,7 +81,7 @@
 			if (this.nucleusCells == null)
 				return;
 
-			foreach (MapCell cell in this.nucleusCells)
+			foreach (GameObject cell in this.nucleusCells)
 			{
 				if (cell != null)
 					Destroy(cell.gameObject);
@@ -92,9 +92,9 @@
 		public void ClearPerimeters()
 		{
 			if (this.perimeterCells == null)
-				this.perimeterCells = new List<MapCell>();
+				this.perimeterCells = new List<GameObject>();
 
-			foreach (MapCell cell in this.perimeterCells)
+			foreach (GameObject cell in this.perimeterCells)
 			{
 				if (cell != null)
 					Destroy(cell.gameObject);
@@ -117,7 +117,7 @@
 
 		public void ExitCurrentMicrobe()
 		{
-			var parentMicrobeData =
+			MicrobeData parentMicrobeData =
 				Game.MicrobeMap.CurrentMicrobe.ParentMicrobeData;
 			if (parentMicrobeData != null)
 			{
@@ -125,7 +125,12 @@
 				Game.MicrobeMap.SetCurrentMicrobe(parentMicrobeData);
 				Microbe parentMicrobe = Game.MicrobeMap.FindMicrobe(parentMicrobeData);
 				if (parentMicrobe != null)
+				{
 					Game.Player.transform.position = parentMicrobe.transform.position;
+					Game.Player.transform.localScale = Vector3.one * GetSmallestMicrobeScale();
+					Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
+				}
+
 				else
 					Debug.Log("Couldn't find parent microbe to teleport to.");
 			}
@@ -144,6 +149,19 @@
 		}
 
 
+		public Vector3 GetRadialPosition(int step)
+		{
+			step++;
+			if (step % 2 == 0)
+				step *= -1;
+
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
+			Vector3 position = GetMapCellCoordinate(step, step, offset);
+
+			return position;
+		}
+
+
 		public void GenerateMicrobes()
 		{
 			MapData internalMap = this.currentMicrobe.Map;
@@ -151,8 +169,9 @@
 			this.microbes = new Microbe[numberOfMicrobes];
 			for (int i = 0; i < numberOfMicrobes; i++)
 			{
-				this.microbes[i] = Instantiate(this.microbePrefab);
+				this.microbes[i] = Instantiate(this.microbePrefab, this.transform);
 				this.microbes[i].Data = internalMap.Microbes[i];
+				this.microbes[i].transform.localPosition = GetRadialPosition(i);
 			}
 		}
 
@@ -163,8 +182,7 @@
 			GenerateNucleus();
 
 			ClearPerimeters();
-			GeneratePerimeter(MapCell.Type.ExitNode);
-			GeneratePerimeter(MapCell.Type.DestroyableWall);
+			RegeneratePerimeter();
 
 			ClearMicrobes();
 			GenerateMicrobes();
@@ -174,41 +192,43 @@
 		}
 
 
-		public void GeneratePerimeter(MapCell.Type perimeterType)
+		public void GeneratePerimeter(GameObject perimeterObject, int? perimeterRadius = null)
 		{
 			int x, y, r2;
-			List<MapCell> cells = new List<MapCell>();
+			List<GameObject> cells = new List<GameObject>();
 			int radius = this.PerimeterRadius;
-			int center = this.PerimeterRadius;
+			if (perimeterRadius != null)
+				radius = perimeterRadius.Value;
+			int center = radius;
 			r2 = this.PerimeterRadius * this.PerimeterRadius;
 
-			cells.Add(CreateCell(center, center + radius, perimeterType));
-			cells.Add(CreateCell(center, center - radius, perimeterType));
-			cells.Add(CreateCell(center + center, center, perimeterType));
-			cells.Add(CreateCell(center - center, center, perimeterType));
+			cells.Add(InstantiateIntoMapCell(center, center + radius, perimeterObject));
+			cells.Add(InstantiateIntoMapCell(center, center - radius, perimeterObject));
+			cells.Add(InstantiateIntoMapCell(center + center, center, perimeterObject));
+			cells.Add(InstantiateIntoMapCell(center - center, center, perimeterObject));
 
 			y = radius;
 			x = 1;
 			y = (int)(Math.Sqrt(r2 - 1) + 0.5);
 			while (x < y)
 			{
-				cells.Add(CreateCell(center + x, center + y, perimeterType));
-				cells.Add(CreateCell(center + x, center - y, perimeterType));
-				cells.Add(CreateCell(center - x, center + y, perimeterType));
-				cells.Add(CreateCell(center - x, center - y, perimeterType));
-				cells.Add(CreateCell(center + y, center + x, perimeterType));
-				cells.Add(CreateCell(center + y, center - x, perimeterType));
-				cells.Add(CreateCell(center - y, center + x, perimeterType));
-				cells.Add(CreateCell(center - y, center - x, perimeterType));
+				cells.Add(InstantiateIntoMapCell(center + x, center + y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center + x, center - y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - x, center + y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - x, center - y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center + y, center + x, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center + y, center - x, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - y, center + x, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - y, center - x, perimeterObject));
 				x += 1;
 				y = (int)(Math.Sqrt(r2 - x * x) + 0.5);
 			}
 			if (x == y)
 			{
-				cells.Add(CreateCell(center + x, center + y, perimeterType));
-				cells.Add(CreateCell(center + x, center - y, perimeterType));
-				cells.Add(CreateCell(center - x, center + y, perimeterType));
-				cells.Add(CreateCell(center - x, center - y, perimeterType));
+				cells.Add(InstantiateIntoMapCell(center + x, center + y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center + x, center - y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - x, center + y, perimeterObject));
+				cells.Add(InstantiateIntoMapCell(center - x, center - y, perimeterObject));
 			}
 
 			this.perimeterCells.AddRange(cells);
@@ -220,12 +240,61 @@
 			MapData internalMap = this.currentMicrobe.Map;
 			int numberOfTraits = internalMap.Traits.Length;
 			this.traits = new MicrobeTraitToggle[numberOfTraits];
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f);
 			for (int i = 0; i < numberOfTraits; i++)
 			{
+				int x = UnityEngine.Random.Range(0, this.NucleusSize);
+				int y = UnityEngine.Random.Range(0, this.NucleusSize);
+
 				MicrobeTrait data = internalMap.Traits[i];
-				this.traits[i] = Instantiate(this.traitPrefabs[(int)data.Type]);
+				this.traits[i] = InstantiateIntoMapCell(
+						x,
+						y,
+						this.traitPrefabs[(int)data.Type],
+						offset)
+					.GetComponent<MicrobeTraitToggle>();
+				//Instantiate(this.traitPrefabs[(int)data.Type], this.transform);
 				this.traits[i].Data = data;
 			}
+		}
+
+
+		public Vector3 GetMapCellCoordinate(int x, int y, Vector2? offset = null)
+		{
+			Vector3 position = new Vector3(
+				x - this.NucleusSize * 0.5f + 0.5f,
+				y - this.NucleusSize * 0.5f + 0.5f,
+				0);
+			if (offset != null)
+			{
+				position = position
+					.AdjustX(offset.Value.x)
+					.AdjustY(offset.Value.y);
+			}
+
+			return position;
+		}
+
+
+		public GameObject GetMapCellPrefab(MapCell.Type type)
+		{
+			if (type == MapCell.Type.Empty)
+				return null;
+
+			return this.mapCellPrefabs[(int)type - 1];
+		}
+
+
+		public float GetSmallestMicrobeScale()
+		{
+			return this.transform.localScale.x * 1.5f;
+		}
+
+
+		public void RegeneratePerimeter()
+		{
+			GeneratePerimeter(GetMapCellPrefab(MapCell.Type.ExitNode));
+			GeneratePerimeter(GetMapCellPrefab(MapCell.Type.DestroyableWall));
 		}
 
 
@@ -233,40 +302,24 @@
 		{
 			this.currentMicrobe = microbeData;
 			GenerateNewMap();
+			this.transform.localScale =
+				Microbe.GetScaleForMaxHealth(Vector3.one, microbeData.MaxHealth);
+			Game.Player.transform.SetParent(this.transform);
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
+			Game.Player.transform.localPosition = GetMapCellCoordinate(0, 0, offset);
+			Game.Player.transform.localScale = Microbe.GetScaleForMaxHealth(
+				Game.PlayerMicrobe.OriginalScale,
+				Game.PlayerMicrobe.MaxHealth);
+			Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
 		}
 
 
 		#region Helper Methods
-		private MapCell CreateCell(int x, int y, MapCell.Type type, Vector2? offset = null)
-		{
-			MapCell newCell;
-
-			if (type == MapCell.Type.Empty)
-				return null;
-			else
-				newCell = Instantiate(this.mapCellPrefabs[(int)type - 1]);
-
-			newCell.transform.parent = this.transform;
-			newCell.transform.localPosition = new Vector3(
-				x - this.NucleusSize * 0.5f + 0.5f,
-				y - this.NucleusSize * 0.5f + 0.5f,
-				0);
-			if (offset != null)
-			{
-				newCell.transform.localPosition =
-					newCell.transform.localPosition
-						.AdjustX(offset.Value.x)
-						.AdjustY(offset.Value.y);
-			}
-
-			return newCell;
-		}
-
-
 		private void GenerateNucleus()
 		{
 			Maze baseMaze = new Maze(this.NucleusSize);
-			this.nucleusCells = new MapCell[this.NucleusSize, this.NucleusSize];
+			this.nucleusCells = new GameObject[this.NucleusSize, this.NucleusSize];
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f);
 
 			for (int x = 0; x < this.NucleusSize; x++)
 			{
@@ -274,14 +327,38 @@
 				{
 					if (baseMaze[x, y] != 0)
 					{
-						this.nucleusCells[x, y] = CreateCell(
-							x,
-							y,
-							(MapCell.Type)baseMaze[x, y],
-							new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f));
+						GameObject prefab = GetMapCellPrefab((MapCell.Type)baseMaze[x, y]);
+
+						this.nucleusCells[x, y] =
+							InstantiateIntoMapCell(x, y, prefab, offset);
 					}
 				}
 			}
+		}
+
+
+		private GameObject InstantiateIntoMapCell(int x, int y, GameObject prefab, Vector2? offset = null)
+		{
+			GameObject cellObject;
+
+			if (prefab == null)
+				return null;
+			else
+				cellObject = Instantiate(prefab, this.transform);
+
+			cellObject.transform.localPosition = new Vector3(
+				x - this.NucleusSize * 0.5f + 0.5f,
+				y - this.NucleusSize * 0.5f + 0.5f,
+				0);
+			if (offset != null)
+			{
+				cellObject.transform.localPosition =
+					cellObject.transform.localPosition
+						.AdjustX(offset.Value.x)
+						.AdjustY(offset.Value.y);
+			}
+
+			return cellObject;
 		}
 		#endregion
 	}
