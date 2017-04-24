@@ -15,7 +15,18 @@
 				return;
 			}
 
-			Game.MicrobeMap.ExitCurrentMicrobe();
+			var exitedMicrobe = Game.MicrobeMap.ExitCurrentMicrobe();
+
+			if (exitedMicrobe != null)
+			{
+				exitedMicrobe.CurrentHealth = exitedMicrobe.MaxHealth;
+				exitedMicrobe.Input.Locked = false;
+				exitedMicrobe.SpriteRenderer.color = exitedMicrobe.OriginalColor;
+				exitedMicrobe.CurrentColor = exitedMicrobe.OriginalColor;
+				Game.Player.transform.position = exitedMicrobe.transform.position;
+				Game.Player.transform.localScale = Vector3.one * Game.MicrobeMap.GetSmallestMicrobeScale();
+				Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
+			}
 		}
 	}
 }

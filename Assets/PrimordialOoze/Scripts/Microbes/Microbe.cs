@@ -3,16 +3,18 @@
 	using System;
 	using System.Collections;
 	using PrimordialOoze.Extensions.Colors;
+	using PrimordialOoze.Extensions.Coroutines;
 	using UnityEngine;
 
 
 	public class Microbe : MonoBehaviour,
-							IDamageable
+							IDamageable,
+							IInjectable
 	{
 		public const string AttackAnimation = "Attack";
+		public const string DeathAnimation = "Death";
 		public const string IdleAnimation = "Idle";
 		public const string InjectAnimation = "Inject";
-		public const string DeathAnimation = "Death";
 
 		[SerializeField]
 		private MicrobeData data;
@@ -36,6 +38,7 @@
 		private Animator animator;
 		private GamePhysics gamePhysics;
 		private Color originalColor;
+		private Color currentColor;
 		private Vector3 originalScale;
 		private bool isMoving;
 		private bool isAttacking;
@@ -46,12 +49,6 @@
 
 
 		#region Properties
-		public Color OriginalColor
-		{
-			get { return this.originalColor; }
-		}
-
-
 		public float Acceleration
 		{
 			get { return this.data.Acceleration; }
@@ -93,6 +90,13 @@
 		}
 
 
+		public Color CurrentColor
+		{
+			get { return this.currentColor; }
+			set { this.currentColor = value; }
+		}
+
+
 		public int CurrentHealth
 		{
 			get { return this.data.CurrentHealth; }
@@ -125,6 +129,12 @@
 		public GamePhysics GamePhysics
 		{
 			get { return this.gamePhysics; }
+		}
+
+
+		public MicrobeInput Input
+		{
+			get { return GetComponent<MicrobeInput>(); }
 		}
 
 
@@ -195,6 +205,12 @@
 		}
 
 
+		public Color OriginalColor
+		{
+			get { return this.originalColor; }
+		}
+
+
 		public Vector3 OriginalScale
 		{
 			get { return this.originalScale; }
@@ -240,9 +256,32 @@
 			this.gamePhysics = GetComponent<GamePhysics>();
 			this.originalScale = this.transform.localScale;
 			this.originalColor = this.spriteRenderer.color;
+			this.currentColor = this.spriteRenderer.color;
 			this.CurrentHealth = this.MaxHealth;
 			this.Killed += OnKilled;
 			Initialize();
+		}
+
+
+		public bool CanBeInjectedBy(Microbe injector)
+		{
+			if (this.GetCurrentHealthPercent() <= 0.5f
+				&& injector.transform.localScale.x <= this.transform.localScale.x / 2)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+
+		public void CompleteInjection(Microbe injector)
+		{
+			Game.MicrobeMap.SetCurrentMicrobe(this.Data);
+			if (this.Data.ParentMicrobeData != null)
+				Destroy(this.gameObject);
 		}
 
 
@@ -348,11 +387,12 @@
 			amount = this.DeductHealth(amount);
 			if (amount > 0)
 			{
-				StartCoroutine(this.spriteRenderer.Flicker(
-					Color.clear, 
-					this.originalColor, 
-					UpdateOpacity,
-					this.invulnerabilityDuration));
+				StartCoroutine(
+					this.spriteRenderer.Flicker(
+						Color.clear,
+						this.currentColor,
+						UpdateOpacity,
+						this.invulnerabilityDuration));
 
 				if (this.Damaged != null)
 					this.Damaged(this);
@@ -381,23 +421,14 @@
 		}
 
 
-		public IEnumerator WaitForCooldownEnd()
-		{
-			yield return new WaitForSeconds(this.AttackCooldown);
-
-			this.isCoolingDown = false;
-		}
-
-
-		#region Helper Methods
-		private void UpdateOpacity()
+		public void UpdateOpacity()
 		{
 			float alpha = 0.25f + (this.GetCurrentHealthPercent() * 0.75f);
-			this.spriteRenderer.color = this.originalColor.SetAlpha(alpha);
+			this.spriteRenderer.color = this.currentColor.SetAlpha(alpha);
 		}
 
 
-		private void UpdateScale()
+		public void UpdateScale()
 		{
 			this.transform.localScale =
 				GetScaleForMaxHealth(this.originalScale, this.MaxHealth);
@@ -405,7 +436,14 @@
 			if (GetComponent<PlayerMicrobeInput>() != null)
 				UpdateCameraBasedOnScaled();
 		}
-		#endregion
+
+
+		public IEnumerator WaitForCooldownEnd()
+		{
+			yield return new WaitForSeconds(this.AttackCooldown);
+
+			this.isCoolingDown = false;
+		}
 	}
 }
 

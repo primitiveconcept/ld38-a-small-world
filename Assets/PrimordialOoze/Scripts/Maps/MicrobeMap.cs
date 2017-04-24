@@ -22,7 +22,6 @@
 		private GameObject[] traitPrefabs;
 
 		private MicrobeData currentMicrobe;
-		private MicrobeData previousMicrobe;
 		private GameObject[,] nucleusCells;
 		private List<GameObject> perimeterCells;
 		private Microbe[] microbes;
@@ -115,38 +114,27 @@
 		}
 
 
-		public void ExitCurrentMicrobe()
+		/// <summary>
+		/// Exit current microbe map.
+		/// </summary>
+		/// <returns>Microbe just existed.</returns>
+		public Microbe ExitCurrentMicrobe()
 		{
-			MicrobeData parentMicrobeData =
-				Game.MicrobeMap.CurrentMicrobe.ParentMicrobeData;
-			if (parentMicrobeData != null)
-			{
-				Debug.Log("Teleporting player to parent microbe.");
-				Game.MicrobeMap.SetCurrentMicrobe(parentMicrobeData);
-				Microbe parentMicrobe = Game.MicrobeMap.FindMicrobe(parentMicrobeData);
-				if (parentMicrobe != null)
-				{
-					Game.Player.transform.position = parentMicrobe.transform.position;
-					Game.Player.transform.localScale = Vector3.one * GetSmallestMicrobeScale();
-					Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
-				}
+			Microbe exitedMicrobe = null;
+			MicrobeData exitedMicrobeData = this.currentMicrobe;
 
-				else
-					Debug.Log("Couldn't find parent microbe to teleport to.");
-			}
-			else
-			{
-				Debug.Log("Teleporting to overworld.");
-				// TODO.
-			}
+			// Exited microbe will still exist in MicrobeMap.
+			// Set map to parent, so exited microbe will be instantiated.
+			if (this.currentMicrobe.ParentMicrobeData != null)
+				SetCurrentMicrobe(exitedMicrobeData.ParentMicrobeData);
+
+			exitedMicrobe = Game.FindMicrobe(exitedMicrobeData);
+			
+			return exitedMicrobe;
 		}
 
 
-		public Microbe FindMicrobe(MicrobeData microbeData)
-		{
-			return this.microbes.FirstOrDefault(
-				microbe => microbe.Data == microbeData);
-		}
+		
 
 
 		public Vector3 GetRadialPosition(int step)
@@ -171,6 +159,7 @@
 			{
 				this.microbes[i] = Instantiate(this.microbePrefab, this.transform);
 				this.microbes[i].Data = internalMap.Microbes[i];
+				this.microbes[i].CurrentHealth = this.microbes[i].MaxHealth;
 				this.microbes[i].transform.localPosition = GetRadialPosition(i);
 			}
 		}
@@ -253,7 +242,6 @@
 						this.traitPrefabs[(int)data.Type],
 						offset)
 					.GetComponent<MicrobeTraitToggle>();
-				//Instantiate(this.traitPrefabs[(int)data.Type], this.transform);
 				this.traits[i].Data = data;
 				this.traits[i].UpdateSprite();
 			}

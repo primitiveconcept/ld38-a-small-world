@@ -49,7 +49,7 @@
 		}
 
 
-		public void OnInjectionSuccess(Microbe targetMicrobe)
+		public void OnInjectionSuccess(IInjectable injectable)
 		{
 			this.Microbe.InvulnerabilityTimeLeft = 1f;
 			this.Microbe.Animator.Play(Microbe.InjectAnimation);
@@ -61,9 +61,7 @@
 							ZoomCamera(
 								() =>
 									{
-										Game.MicrobeMap.SetCurrentMicrobe(targetMicrobe.Data);
-										if (targetMicrobe != null)
-											Destroy(targetMicrobe.gameObject);
+										injectable.CompleteInjection(this.Microbe);
 										this.Microbe.Animator.Play(Microbe.IdleAnimation);
 									}));
 					});

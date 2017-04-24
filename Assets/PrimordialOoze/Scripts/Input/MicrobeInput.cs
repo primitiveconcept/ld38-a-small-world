@@ -12,6 +12,13 @@
 
 
 		#region Properties
+		public bool Locked
+		{
+			get { return this.locked; }
+			set { this.locked = value; }
+		}
+
+
 		public Microbe Microbe
 		{
 			get { return this.microbe; }

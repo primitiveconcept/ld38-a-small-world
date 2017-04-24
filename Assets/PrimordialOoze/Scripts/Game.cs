@@ -1,5 +1,6 @@
 ﻿namespace PrimordialOoze
 {
+	using System.Linq;
 	using UnityEngine;
 
 
@@ -18,6 +19,8 @@
 
 		[SerializeField]
 		private Microbe playerPrefab;
+
+		private Microbe[] overworldMicrobes;
 
 
 		#region Properties
@@ -61,6 +64,12 @@
 		}
 
 
+		public static Microbe[] OverworldMicrobes
+		{
+			get { return Instance.overworldMicrobes; }
+		}
+
+
 		public static GameObject Player
 		{
 			get { return FindObjectOfType<PlayerMicrobeInput>().gameObject; }
@@ -85,6 +94,21 @@
 		#endregion
 
 
+		public static Microbe FindMicrobe(MicrobeData microbeData)
+		{
+			Microbe queriedMicrobe = MicrobeMap.Microbes.FirstOrDefault(
+				microbe => microbe.Data == microbeData);
+
+			if (queriedMicrobe == null)
+			{
+				queriedMicrobe = Instance.overworldMicrobes.FirstOrDefault(
+					microbe => microbe.Data == microbeData);
+			}
+
+			return queriedMicrobe;
+		}
+
+
 		public void Awake()
 		{
 			EnforceSingleInstance();
@@ -95,6 +119,7 @@
 		{
 			this.sightUI.gameObject.SetActive(true);
 			this.sightUI.UpdateSight(PlayerMicrobe.SightDistance);
+			this.overworldMicrobes = FindObjectsOfType<Microbe>();
 		}
 
 

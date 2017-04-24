@@ -25,10 +25,7 @@
 
 		public void DoDamage(Collider2D target)
 		{
-			Microbe targetMicrobe = target.GetComponent<Microbe>();
-
-			if (target == null
-				|| targetMicrobe == null)
+			if (target == null)
 			{
 				this.owner.OnInjectionFailure();
 				return;
@@ -46,31 +43,27 @@
 				return;
 			}
 
-			GamePhysics ownerPhysics = this.owner.GetComponent<GamePhysics>();
-			GamePhysics targetPhysics = target.GetComponent<GamePhysics>();
-			ownerPhysics.SetMovement(Vector2.zero);
-			targetPhysics.SetMovement(Vector2.zero);
-
-			if (targetMicrobe.GetCurrentHealthPercent() <= 0.5f
-				&& this.owner.transform.localScale.x <= target.transform.localScale.x / 2)
-			{
-				this.owner.OnInjectionSuccess(targetMicrobe);
-			}
-			else
+			IInjectable targetInjectable = target.GetComponent<IInjectable>();
+			if (targetInjectable == null)
 			{
 				this.owner.OnInjectionFailure();
+				return;
 			}
 
-			if (this.owner != null)
-				this.gameObject.SetActive(false);
+			GamePhysics ownerPhysics = this.owner.GetComponent<GamePhysics>();
+			ownerPhysics.SetMovement(Vector2.zero);
+			GamePhysics targetPhysics = target.GetComponent<GamePhysics>();
+			if (targetPhysics != null)
+				targetPhysics.SetMovement(Vector2.zero);
 
-			// Instantiate effect if there is one.
-			if (this.damageEffect != null)
+			if (this.owner != null)
 			{
-				Instantiate(
-					this.damageEffect,
-					target.transform.position,
-					target.transform.rotation);
+				this.gameObject.SetActive(false);
+				Microbe injector = this.owner.GetComponent<Microbe>();
+				if (targetInjectable.CanBeInjectedBy(injector))
+				{
+					this.owner.OnInjectionSuccess(targetInjectable);
+				}
 			}
 		}
 
