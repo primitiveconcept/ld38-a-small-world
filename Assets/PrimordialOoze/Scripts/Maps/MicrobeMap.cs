@@ -2,11 +2,12 @@
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 
 
-	public class GameMap : MonoBehaviour
+	public class MicrobeMap : MonoBehaviour
 	{
 		public const float NucleusToHealthRatio = 0.1f;
 		public const float PerimeterToHealthRatio = 0.2f;
@@ -15,10 +16,7 @@
 		private Microbe microbePrefab;
 
 		[SerializeField]
-		private MapCell wallPrefab;
-
-		[SerializeField]
-		private MapCell destroyableWallPrefab;
+		private MapCell[] mapCellPrefabs; // Must sort according to type enum.
 
 		[SerializeField]
 		private MicrobeTraitToggle[] traitPrefabs;
@@ -26,7 +24,7 @@
 		private MicrobeData currentMicrobe;
 		private MicrobeData previousMicrobe;
 		private MapCell[,] nucleusCells;
-		private MapCell[] perimeterCells;
+		private List<MapCell> perimeterCells;
 		private Microbe[] microbes;
 		private MicrobeTraitToggle[] traits; // Must sort according to type enum.
 
@@ -91,10 +89,10 @@
 		}
 
 
-		public void ClearPerimeter()
+		public void ClearPerimeters()
 		{
 			if (this.perimeterCells == null)
-				return;
+				this.perimeterCells = new List<MapCell>();
 
 			foreach (MapCell cell in this.perimeterCells)
 			{
@@ -119,19 +117,36 @@
 
 		public void ExitCurrentMicrobe()
 		{
-			if (this.currentMicrobe.ParentMicrobe != null)
-				SetCurrentMicrobe(this.currentMicrobe.ParentMicrobe);
+			var parentMicrobeData =
+				Game.MicrobeMap.CurrentMicrobe.ParentMicrobeData;
+			if (parentMicrobeData != null)
+			{
+				Debug.Log("Teleporting player to parent microbe.");
+				Game.MicrobeMap.SetCurrentMicrobe(parentMicrobeData);
+				Microbe parentMicrobe = Game.MicrobeMap.FindMicrobe(parentMicrobeData);
+				if (parentMicrobe != null)
+					Game.Player.transform.position = parentMicrobe.transform.position;
+				else
+					Debug.Log("Couldn't find parent microbe to teleport to.");
+			}
 			else
 			{
-				// TODO: Go to main map.
+				Debug.Log("Teleporting to overworld.");
+				// TODO.
 			}
+		}
+
+
+		public Microbe FindMicrobe(MicrobeData microbeData)
+		{
+			return this.microbes.FirstOrDefault(
+				microbe => microbe.Data == microbeData);
 		}
 
 
 		public void GenerateMicrobes()
 		{
-			ClearMicrobes();
-			MapData internalMap = this.currentMicrobe.InternalMap;
+			MapData internalMap = this.currentMicrobe.Map;
 			int numberOfMicrobes = internalMap.Microbes.Count;
 			this.microbes = new Microbe[numberOfMicrobes];
 			for (int i = 0; i < numberOfMicrobes; i++)
@@ -144,61 +159,65 @@
 
 		public void GenerateNewMap()
 		{
+			ClearNucleus();
 			GenerateNucleus();
-			GeneratePerimeter();
+
+			ClearPerimeters();
+			GeneratePerimeter(MapCell.Type.ExitNode);
+			GeneratePerimeter(MapCell.Type.DestroyableWall);
+
+			ClearMicrobes();
 			GenerateMicrobes();
+
+			ClearTraits();
 			GenerateTraits();
 		}
 
 
-		public void GeneratePerimeter()
+		public void GeneratePerimeter(MapCell.Type perimeterType)
 		{
-			ClearPerimeter();
-
 			int x, y, r2;
 			List<MapCell> cells = new List<MapCell>();
 			int radius = this.PerimeterRadius;
 			int center = this.PerimeterRadius;
 			r2 = this.PerimeterRadius * this.PerimeterRadius;
 
-			cells.Add(CreateCell(center, center + radius, MapCell.Type.Wall));
-			cells.Add(CreateCell(center, center - radius, MapCell.Type.Wall));
-			cells.Add(CreateCell(center + center, center, MapCell.Type.Wall));
-			cells.Add(CreateCell(center - center, center, MapCell.Type.Wall));
+			cells.Add(CreateCell(center, center + radius, perimeterType));
+			cells.Add(CreateCell(center, center - radius, perimeterType));
+			cells.Add(CreateCell(center + center, center, perimeterType));
+			cells.Add(CreateCell(center - center, center, perimeterType));
 
 			y = radius;
 			x = 1;
 			y = (int)(Math.Sqrt(r2 - 1) + 0.5);
 			while (x < y)
 			{
-				cells.Add(CreateCell(center + x, center + y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center + x, center - y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - x, center + y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - x, center - y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center + y, center + x, MapCell.Type.Wall));
-				cells.Add(CreateCell(center + y, center - x, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - y, center + x, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - y, center - x, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + x, center + y, perimeterType));
+				cells.Add(CreateCell(center + x, center - y, perimeterType));
+				cells.Add(CreateCell(center - x, center + y, perimeterType));
+				cells.Add(CreateCell(center - x, center - y, perimeterType));
+				cells.Add(CreateCell(center + y, center + x, perimeterType));
+				cells.Add(CreateCell(center + y, center - x, perimeterType));
+				cells.Add(CreateCell(center - y, center + x, perimeterType));
+				cells.Add(CreateCell(center - y, center - x, perimeterType));
 				x += 1;
 				y = (int)(Math.Sqrt(r2 - x * x) + 0.5);
 			}
 			if (x == y)
 			{
-				cells.Add(CreateCell(center + x, center + y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center + x, center - y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - x, center + y, MapCell.Type.Wall));
-				cells.Add(CreateCell(center - x, center - y, MapCell.Type.Wall));
+				cells.Add(CreateCell(center + x, center + y, perimeterType));
+				cells.Add(CreateCell(center + x, center - y, perimeterType));
+				cells.Add(CreateCell(center - x, center + y, perimeterType));
+				cells.Add(CreateCell(center - x, center - y, perimeterType));
 			}
 
-			this.perimeterCells = cells.ToArray();
+			this.perimeterCells.AddRange(cells);
 		}
 
 
 		public void GenerateTraits()
 		{
-			ClearTraits();
-
-			MapData internalMap = this.currentMicrobe.InternalMap;
+			MapData internalMap = this.currentMicrobe.Map;
 			int numberOfTraits = internalMap.Traits.Length;
 			this.traits = new MicrobeTraitToggle[numberOfTraits];
 			for (int i = 0; i < numberOfTraits; i++)
@@ -222,12 +241,10 @@
 		{
 			MapCell newCell;
 
-			if (type == MapCell.Type.Wall)
-				newCell = Instantiate(this.wallPrefab);
-			else if (type == MapCell.Type.DestroyableWall)
-				newCell = Instantiate(this.destroyableWallPrefab);
-			else
+			if (type == MapCell.Type.Empty)
 				return null;
+			else
+				newCell = Instantiate(this.mapCellPrefabs[(int)type - 1]);
 
 			newCell.transform.parent = this.transform;
 			newCell.transform.localPosition = new Vector3(
@@ -248,8 +265,6 @@
 
 		private void GenerateNucleus()
 		{
-			ClearNucleus();
-
 			Maze baseMaze = new Maze(this.NucleusSize);
 			this.nucleusCells = new MapCell[this.NucleusSize, this.NucleusSize];
 
@@ -282,10 +297,10 @@ namespace PrimordialOoze
 	using UnityEngine;
 
 
-	[CustomEditor(typeof(GameMap))]
+	[CustomEditor(typeof(MicrobeMap))]
 	public class GameMapInspector : Editor
 	{
-		private GameMap gameMap;
+		private MicrobeMap microbeMap;
 
 
 		public override void OnInspectorGUI()
@@ -294,12 +309,12 @@ namespace PrimordialOoze
 
 			if (Application.isPlaying)
 			{
-				if (this.gameMap == null)
-					this.gameMap = target as GameMap;
+				if (this.microbeMap == null)
+					this.microbeMap = target as MicrobeMap;
 
 				if (GUILayout.Button("Regenerate Map"))
 				{
-					this.gameMap.GenerateNewMap();
+					this.microbeMap.GenerateNewMap();
 				}
 			}
 		}

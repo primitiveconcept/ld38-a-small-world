@@ -1,5 +1,6 @@
 ﻿namespace PrimordialOoze
 {
+	using System;
 	using PrimordialOoze.Extensions.Colors;
 	using UnityEngine;
 
@@ -11,6 +12,9 @@
 		private MicrobeTrait data;
 
 		private SpriteRenderer spriteRenderer;
+
+		public event Action<IDamageable> Damaged;
+		public event Action Killed;
 
 
 		#region Properties

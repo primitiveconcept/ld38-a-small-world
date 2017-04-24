@@ -67,10 +67,14 @@
 		private void PopulateNewMicrobes(MicrobeData parent)
 		{
 			int numberOfMicrobes = (int)Math.Ceiling(parent.MaxHealth / 25f);
-			this.microbes = new MicrobeData[numberOfMicrobes];
+			if (this.microbes != null)
+				this.microbes.Clear();
+			else
+				this.microbes = new List<MicrobeData>();
 			for (int i = 0; i < numberOfMicrobes; i++)
 			{
-				this.microbes[i] = parent.Clone();
+				this.microbes.Add(parent.Clone());
+				this.microbes[i].ParentMicrobeData = parent;
 				this.microbes[i].MaxHealth /= 2;
 				this.microbes[i].CurrentHealth = this.microbes[i].MaxHealth;
 			}

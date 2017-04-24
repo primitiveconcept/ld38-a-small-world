@@ -1,13 +1,12 @@
 ﻿namespace PrimordialOoze
 {
+	using System;
 	using UnityEngine;
 
 
 	public class MapCell : MonoBehaviour,
 							IDamageable
 	{
-
-
 		[SerializeField]
 		private int currentHealth;
 
@@ -23,11 +22,16 @@
 		[SerializeField]
 		private float invulnerabilityTimeLeft;
 
+		public event Action<IDamageable> Damaged;
+		public event Action Killed;
+
+
 		public enum Type
 		{
 			Empty = 0,
 			Wall = 1,
-			DestroyableWall = 2
+			DestroyableWall = 2,
+			ExitNode = 3
 		}
 
 
@@ -68,20 +72,29 @@
 		#endregion
 
 
-		public void Update()
+		public int TakeDamage(int amount)
 		{
-			this.CountdownInvulnerabilityTimeLeft();
+			amount = this.DeductHealth(amount);
+			if (amount > 0)
+			{
+				if (this.Damaged != null)
+					this.Damaged(this);
+
+				if (this.CurrentHealth == 0
+					&& this.Killed != null)
+				{
+					Debug.Log("Killed.");
+					this.Killed();
+				}
+			}
+
+			return amount;
 		}
 
 
-		public int TakeDamage(int amount)
+		public void Update()
 		{
-			amount = IDamageableExtensions.TakeDamage(this, amount);
-
-			if (this.CurrentHealth == 0)
-				Destroy(this.gameObject);
-
-			return amount;
+			this.CountdownInvulnerabilityTimeLeft();
 		}
 	}
 }

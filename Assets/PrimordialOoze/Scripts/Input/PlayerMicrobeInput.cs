@@ -3,7 +3,7 @@
 	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 	using UnityStandardAssets.CrossPlatformInput;
-	
+
 
 	public class PlayerMicrobeInput : MicrobeInput
 	{
@@ -23,8 +23,20 @@
 			{
 				return Camera.main.ScreenToWorldPoint(
 					Input.mousePosition
-					.SetZ(0));
+						.SetZ(0));
 			}
+		}
+
+
+		public PrimaryAttack PrimaryAttack
+		{
+			get { return GetComponent<PrimaryAttack>(); }
+		}
+
+
+		public SecondaryAttack SecondaryAttack
+		{
+			get { return GetComponent<SecondaryAttack>(); }
 		}
 		#endregion
 
@@ -35,27 +47,29 @@
 				|| CrossPlatformInputManager.GetButtonDown(Fire2))
 			{
 				Vector3 target = new Vector3(
-					CrossPlatformInputManager.GetAxisRaw(HorizontalAxis),
-					CrossPlatformInputManager.GetAxisRaw(VerticalAxis))
+						CrossPlatformInputManager.GetAxisRaw(HorizontalAxis),
+						CrossPlatformInputManager.GetAxisRaw(VerticalAxis))
 					.normalized;
-				
+
 				if (target.x == 0
 					&& target.y == 0)
 				{
 					target = (MousePosition - this.transform.position).normalized;
 				}
 
-				if (CrossPlatformInputManager.GetButtonDown(Fire2))
+				if (CrossPlatformInputManager.GetButtonDown(Fire1))
 				{
-					Debug.Log("Inject: " + target.x + ", " + target.y);
-					this.Microbe.Inject(target.x, target.y);
+					PrimaryAttack primaryAttack = this.PrimaryAttack;
+					if (primaryAttack != null)
+						primaryAttack.Attack(target.x, target.y);
 				}
-				else
+
+				else if (CrossPlatformInputManager.GetButtonDown(Fire2))
 				{
-					Debug.Log("Attack: " + target.x + ", " + target.y);
-					this.Microbe.Attack(target.x, target.y);
+					SecondaryAttack secondaryAttack = this.SecondaryAttack;
+					if (secondaryAttack != null)
+						secondaryAttack.Attack(target.x, target.y);
 				}
-				
 			}
 		}
 

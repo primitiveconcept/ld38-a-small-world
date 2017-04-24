@@ -6,12 +6,16 @@
 
 	public interface IDamageable
 	{
+		event Action<IDamageable> Damaged;
+		event Action Killed;
+
+
 		#region Properties
 		int CurrentHealth { get; set; }
-		int MaxHealth { get; }
 		float InvulnerabilityDuration { get; }
 		float InvulnerabilityTimeLeft { get; set; }
 		bool IsInvulnerable { get; }
+		int MaxHealth { get; }
 		#endregion
 
 
@@ -21,37 +25,6 @@
 
 	public static class IDamageableExtensions
 	{
-		/// <summary>
-		/// Deal damage to damageable object.
-		/// </summary>
-		/// <param name="damageable">IDamageable taking damage</param>
-		/// <param name="amount">Amount of damage.</param>
-		/// <returns>Amount of damage done.</returns>
-		public static int TakeDamage(this IDamageable damageable, int amount)
-		{
-			if (damageable.InvulnerabilityTimeLeft > 0
-				|| damageable.IsInvulnerable)
-			{
-				return 0;
-			}
-
-			if (damageable.CurrentHealth - amount < 0)
-			{
-				amount = damageable.CurrentHealth;
-			}
-			else
-			{
-				damageable.InvulnerabilityTimeLeft = damageable.InvulnerabilityDuration;
-			}
-
-			damageable.CurrentHealth -= amount;
-			if (damageable.CurrentHealth < 0)
-				damageable.CurrentHealth = 0;
-
-			return amount;
-		}
-
-
 		/// <summary>
 		/// Reduces invulnerability time by deltaTime.
 		/// </summary>
@@ -75,6 +48,37 @@
 		public static float GetCurrentHealthPercent(this IDamageable damageable)
 		{
 			return (float)damageable.CurrentHealth / damageable.MaxHealth;
+		}
+
+
+		/// <summary>
+		/// Deal damage to damageable object.
+		/// </summary>
+		/// <param name="damageable">IDamageable taking damage</param>
+		/// <param name="amount">Amount of damage.</param>
+		/// <returns>Amount of damage done.</returns>
+		public static int DeductHealth(this IDamageable damageable, int amount)
+		{
+			if (damageable.InvulnerabilityTimeLeft > 0
+				|| damageable.IsInvulnerable)
+			{
+				return 0;
+			}
+
+			if (damageable.CurrentHealth - amount < 0)
+			{
+				amount = damageable.CurrentHealth;
+			}
+			else
+			{
+				damageable.InvulnerabilityTimeLeft = damageable.InvulnerabilityDuration;
+			}
+
+			damageable.CurrentHealth -= amount;
+			if (damageable.CurrentHealth < 0)
+				damageable.CurrentHealth = 0;
+
+			return amount;
 		}
 	}
 }

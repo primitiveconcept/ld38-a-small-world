@@ -9,18 +9,14 @@
 	public class Microbe : MonoBehaviour,
 							IDamageable
 	{
-		public const string AttackAnimation = "Microbe_Attack";
-		public const string IdleAnimation = "Microbe_Idle";
-		public const string InjectAnimation = "Microbe_Inject";
+		public const string AttackAnimation = "Attack";
+		public const string CameraIdleAnimation = "CameraIdle";
+		public const string CameraZoomInAnimation = "CameraZoomIn";
+		public const string IdleAnimation = "Idle";
+		public const string InjectAnimation = "Inject";
 
 		[SerializeField]
 		private MicrobeData data;
-
-		[SerializeField]
-		private GameObject attackDamageField;
-
-		[SerializeField]
-		private GameObject injectionField;
 
 		[SerializeField]
 		private bool isInvulnerable;
@@ -37,7 +33,6 @@
 		private Vector3 originalScale;
 		private bool isMoving;
 		private bool isAttacking;
-		private bool isInjecting;
 		private bool isCoolingDown;
 
 		public event Action<IDamageable> Damaged;
@@ -52,17 +47,16 @@
 		}
 
 
+		public Animator Animator
+		{
+			get { return this.animator; }
+		}
+
+
 		public float AttackCooldown
 		{
 			get { return this.data.AttackCooldown; }
 			set { this.data.AttackCooldown = value; }
-		}
-
-
-		public GameObject AttackDamageField
-		{
-			get { return this.attackDamageField; }
-			set { this.attackDamageField = value; }
 		}
 
 
@@ -136,6 +130,13 @@
 		}
 
 
+		public bool IsCoolingDown
+		{
+			get { return this.isCoolingDown; }
+			set { this.isCoolingDown = value; }
+		}
+
+
 		public bool IsInvulnerable
 		{
 			get { return this.isInvulnerable; }
@@ -164,6 +165,12 @@
 		}
 
 
+		public Vector3 OriginalScale
+		{
+			get { return this.originalScale; }
+		}
+
+
 		public float SightDistance
 		{
 			get { return this.data.SightDistance; }
@@ -171,31 +178,18 @@
 		}
 
 
-		public float Strength
+		public SpriteRenderer SpriteRenderer
+		{
+			get { return this.spriteRenderer; }
+		}
+
+
+		public int Strength
 		{
 			get { return this.data.Strength; }
 			set { this.data.Strength = value; }
 		}
 		#endregion
-
-
-		public void Attack(float x, float y)
-		{
-			if (this.isAttacking
-				|| this.isCoolingDown
-				|| this.attackDamageField == null)
-			{
-				return;
-			}
-
-			this.isAttacking = true;
-			this.animator.Play(AttackAnimation);
-			this.gamePhysics.SetMovement(
-				new Vector2(x, y).normalized
-				* (this.AttackSpeed + this.MaxSpeed));
-			this.attackDamageField.SetActive(true);
-			StartCoroutine(WaitToFinishAttack(x, y));
-		}
 
 
 		public void Awake()
@@ -206,10 +200,6 @@
 			this.originalScale = this.transform.localScale;
 			this.CurrentHealth = this.MaxHealth;
 			this.Killed += OnKilled;
-			if (this.attackDamageField != null)
-				this.attackDamageField.SetActive(false);
-			if (this.injectionField != null)
-				this.injectionField.SetActive(false);
 		}
 
 
@@ -235,26 +225,6 @@
 		}
 
 
-		public void Inject(float x, float y)
-		{
-			if (this.isAttacking
-				|| this.isCoolingDown
-				|| this.isInjecting
-				|| this.attackDamageField == null)
-			{
-				return;
-			}
-
-			this.isInjecting = true;
-			this.animator.Play(InjectAnimation);
-			this.gamePhysics.SetMovement(
-				new Vector2(x, y).normalized
-				* ((this.AttackSpeed + this.MaxSpeed) / 2));
-			this.injectionField.SetActive(true);
-			StartCoroutine(WaitToFinishAttack(x, y));
-		}
-
-
 		public void Move(Vector2 direction, float speed = 0)
 		{
 			Move(direction.x, direction.y, speed);
@@ -263,8 +233,7 @@
 
 		public void Move(float x, float y, float speed = 0)
 		{
-			if (this.isAttacking
-				|| this.isInjecting)
+			if (this.isAttacking)
 			{
 				return;
 			}
@@ -296,47 +265,29 @@
 		}
 
 
-		public void OnInjected()
-		{
-			Game.Instance.GameMap.SetCurrentMicrobe(this.Data);
-		}
-
-
 		public void OnKilled()
 		{
-			MicrobeData microbeParent = Game.Instance.GameMap.CurrentMicrobe;
+			MicrobeData microbeParent = Game.MicrobeMap.CurrentMicrobe;
 			if (microbeParent != null
-				&& microbeParent.InternalMap.Microbes.Contains(this.data))
+				&& microbeParent.Map.Microbes.Contains(this.data))
 			{
-				microbeParent.InternalMap.Microbes.Remove(this.data);
+				microbeParent.Map.Microbes.Remove(this.data);
 			}
-
-			if (GetComponent<PlayerMicrobeInput>())
-			{
-				// TODO
-			}
-			else
-			{
-				Destroy(this.gameObject);
-			}
-		}
-
-
-		public void Start()
-		{
 		}
 
 
 		public int TakeDamage(int amount)
 		{
-			amount = IDamageableExtensions.TakeDamage(this, amount);
-			if (amount > 0
-				&& this.Damaged != null)
+			amount = this.DeductHealth(amount);
+			if (amount > 0)
 			{
-				this.Damaged(this);
+				if (this.Damaged != null)
+					this.Damaged(this);
+
 				if (this.CurrentHealth == 0
 					&& this.Killed != null)
 				{
+					Debug.Log("Killed.");
 					this.Killed();
 				}
 			}
@@ -351,24 +302,7 @@
 		}
 
 
-		#region Helper Methods
-		private IEnumerator WaitToFinishAttack(float x, float y)
-		{
-			this.isMoving = true;
-			yield return new WaitForSeconds(this.AttackDuration);
-
-			this.isAttacking = false;
-			this.isInjecting = false;
-			this.isCoolingDown = true;
-			this.gamePhysics.SetMovement(new Vector2(x, y) * this.MaxSpeed);
-			this.attackDamageField.SetActive(false);
-			this.injectionField.SetActive(false);
-			this.animator.Play(IdleAnimation);
-			StartCoroutine(WaitForCooldownEnd());
-		}
-
-
-		private IEnumerator WaitForCooldownEnd()
+		public IEnumerator WaitForCooldownEnd()
 		{
 			yield return new WaitForSeconds(this.AttackCooldown);
 
@@ -376,6 +310,7 @@
 		}
 
 
+		#region Helper Methods
 		private void UpdateOpacity()
 		{
 			float alpha = 0.5f + (this.GetCurrentHealthPercent() / 2);
@@ -414,7 +349,7 @@ namespace PrimordialOoze
 
 				if (GUILayout.Button("Load Internal Map"))
 				{
-					Game.Instance.GameMap.SetCurrentMicrobe(this.microbe.Data);
+					Game.MicrobeMap.SetCurrentMicrobe(this.microbe.Data);
 				}
 			}
 		}

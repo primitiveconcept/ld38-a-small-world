@@ -24,6 +24,36 @@
 		private GameObject owner;
 
 
+		#region Properties
+		public LayerMask CollisionMask
+		{
+			get { return this.collisionMask; }
+			set { this.collisionMask = value; }
+		}
+
+
+		public int Damage
+		{
+			get { return this.damage; }
+			set { this.damage = value; }
+		}
+
+
+		public GameObject DamageEffect
+		{
+			get { return this.damageEffect; }
+			set { this.damageEffect = value; }
+		}
+
+
+		public GameObject Owner
+		{
+			get { return this.owner; }
+			set { this.owner = value; }
+		}
+		#endregion
+
+
 		public void Awake()
 		{
 			if (this.owner == null)

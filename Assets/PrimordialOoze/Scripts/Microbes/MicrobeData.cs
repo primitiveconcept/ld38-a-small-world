@@ -12,7 +12,7 @@
 		private float sightDistance = 5f;
 
 		[SerializeField]
-		private float strength = 5f;
+		private int strength = 5;
 
 		[Header("Attack")]
 		[SerializeField]
@@ -41,8 +41,8 @@
 		[SerializeField]
 		private int currentHealth;
 
-		private MapData internalMap;
-		private MicrobeData parentMicrobe;
+		private MapData map;
+		private MicrobeData parentMicrobeData;
 
 
 		#region Properties
@@ -88,15 +88,15 @@
 		}
 
 
-		public MapData InternalMap
+		public MapData Map
 		{
 			get
 			{
-				if (this.internalMap == null)
-					this.internalMap = new MapData(this);
-				return this.internalMap;
+				if (this.map == null)
+					this.map = new MapData(this);
+				return this.map;
 			}
-			set { this.internalMap = value; }
+			set { this.map = value; }
 		}
 
 
@@ -114,10 +114,10 @@
 		}
 
 
-		public MicrobeData ParentMicrobe
+		public MicrobeData ParentMicrobeData
 		{
-			get { return this.parentMicrobe; }
-			set { this.parentMicrobe = value; }
+			get { return this.parentMicrobeData; }
+			set { this.parentMicrobeData = value; }
 		}
 
 
@@ -128,7 +128,7 @@
 		}
 
 
-		public float Strength
+		public int Strength
 		{
 			get { return this.strength; }
 			set { this.strength = value; }

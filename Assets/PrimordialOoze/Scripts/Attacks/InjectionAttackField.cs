@@ -9,23 +9,18 @@
 	/// </summary>
 	[RequireComponent(typeof(Collider2D))]
 	[Serializable]
-	public class InjectionAttack : MonoBehaviour
+	public class InjectionAttackField : MonoBehaviour
 	{
 		[SerializeField]
 		private LayerMask collisionMask;
-		
+
 		[SerializeField]
 		private GameObject damageEffect;
 
 		[SerializeField]
-		private GameObject owner;
+		private InjectionAttack owner;
 
-
-		public void Awake()
-		{
-			if (this.owner == null)
-				this.owner = this.gameObject;
-		}
+		private Coroutine injectionCoroutine = null;
 
 
 		public void DoDamage(Collider2D target)
@@ -35,14 +30,21 @@
 			if (target == null
 				|| targetMicrobe == null)
 			{
+				this.owner.OnInjectionFailure();
 				return;
 			}
 
 			if ((this.collisionMask.value & (1 << target.gameObject.layer)) == 0)
+			{
+				this.owner.OnInjectionFailure();
 				return;
+			}
 
 			if (target.gameObject == this.owner)
+			{
+				this.owner.OnInjectionFailure();
 				return;
+			}
 			
 			GamePhysics ownerPhysics = this.owner.GetComponent<GamePhysics>();
 			GamePhysics targetPhysics = target.GetComponent<GamePhysics>();
@@ -50,7 +52,13 @@
 			targetPhysics.SetMovement(Vector2.zero);
 
 			if (targetMicrobe.GetCurrentHealthPercent() <= 0.5f)
-				targetMicrobe.OnInjected();
+			{
+				this.owner.OnInjectionSuccess(targetMicrobe);
+			}
+			else
+			{
+				this.owner.OnInjectionFailure();
+			}
 
 			// Instantiate effect if there is one.
 			if (this.damageEffect != null)

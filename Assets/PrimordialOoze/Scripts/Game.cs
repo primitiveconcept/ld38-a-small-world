@@ -11,7 +11,10 @@
 		private SightUI sightUI;
 
 		[SerializeField]
-		private GameMap gameMap;
+		private MicrobeMap microbeMap;
+
+		[SerializeField]
+		private Microbe playerPrefab;
 
 
 		#region Properties
@@ -38,26 +41,37 @@
 		}
 
 
-		public GameMap GameMap
+		public static MicrobeMap MicrobeMap
 		{
 			get
 			{
-				if (this.gameMap == null)
-					this.gameMap = FindObjectOfType<GameMap>();
-				return this.gameMap;
+				if (Instance.microbeMap == null)
+					Instance.microbeMap = FindObjectOfType<MicrobeMap>();
+				return Instance.microbeMap;
 			}
 		}
 
 
-		public GameObject Player
+		public static GameObject Player
 		{
 			get { return FindObjectOfType<PlayerMicrobeInput>().gameObject; }
 		}
 
 
-		public Microbe PlayerMicrobe
+		public static Microbe PlayerMicrobe
 		{
-			get { return this.Player.GetComponent<Microbe>(); }
+			get
+			{
+				if (Player != null)
+					return Player.GetComponent<Microbe>();
+				return null;
+			}
+		}
+
+
+		public static Microbe PlayerPrefab
+		{
+			get { return Instance.playerPrefab; }
 		}
 		#endregion
 
@@ -71,7 +85,7 @@
 		public void Start()
 		{
 			this.sightUI.gameObject.SetActive(true);
-			this.sightUI.UpdateSight(this.PlayerMicrobe.SightDistance);
+			this.sightUI.UpdateSight(PlayerMicrobe.SightDistance);
 		}
 
 
