@@ -1,7 +1,12 @@
 ﻿namespace PrimordialOoze
 {
+	using System.Collections.Generic;
 	using System.Linq;
+	using PrimordialOoze.Extensions.Colors;
+	using PrimordialOoze.Extensions.Coroutines;
 	using UnityEngine;
+	using UnityEngine.SceneManagement;
+	using UnityEngine.UI;
 
 
 	public class Game : MonoBehaviour
@@ -12,21 +17,45 @@
 		private SightUI sightUI;
 
 		[SerializeField]
-		private GameObject bubblesEffect;
+		private Text primaryAttackText;
 
 		[SerializeField]
+		private Text secondaryAttackText;
+
+		[SerializeField]
+		private Text hintText;
+
+		[SerializeField]
+		private Text tooltipText;
+
+		[SerializeField]
+		private ScrollingBackground scrollingBackground;
+
+		[SerializeField]
+		private Color overworldColor;
+
+		[SerializeField]
+		private Color insideMicrobeColor;
+
 		private MicrobeMap microbeMap;
 
 		[SerializeField]
 		private Microbe playerPrefab;
 
-		private Microbe[] overworldMicrobes;
+		[SerializeField]
+		private List<Microbe> overworldMicrobes;
 
 
 		#region Properties
-		public static GameObject BubblesEffect
+		public static ScrollingBackground ScrollingBackground
 		{
-			get { return Instance.bubblesEffect; }
+			get { return Instance.scrollingBackground; }
+		}
+
+
+		public static Color InsideMicrobeColor
+		{
+			get { return Instance.insideMicrobeColor; }
 		}
 
 
@@ -64,7 +93,13 @@
 		}
 
 
-		public static Microbe[] OverworldMicrobes
+		public static Color OverworldColor
+		{
+			get { return Instance.overworldColor; }
+		}
+
+
+		public static List<Microbe> OverworldMicrobes
 		{
 			get { return Instance.overworldMicrobes; }
 		}
@@ -91,6 +126,12 @@
 		{
 			get { return Instance.playerPrefab; }
 		}
+
+
+		public static SightUI SightUi
+		{
+			get { return Instance.sightUI; }
+		}
 		#endregion
 
 
@@ -109,6 +150,73 @@
 		}
 
 
+		public static void HideTooltip()
+		{
+			Instance.tooltipText.gameObject.SetActive(false);
+		}
+
+
+		public static void SetPrimaryAttackText(string text)
+		{
+			if (string.IsNullOrEmpty(text))
+				Instance.primaryAttackText.transform.parent.gameObject.SetActive(false);
+			if (string.IsNullOrEmpty(text))
+				Instance.primaryAttackText.transform.parent.gameObject.SetActive(true);
+
+			if (Instance.primaryAttackText.text != text)
+			{
+				Instance.primaryAttackText.text = text;
+				Instance.StartCoroutine(Instance.primaryAttackText.Flicker(
+					Color.yellow,
+					Instance.primaryAttackText.color,
+					null,
+					1f,
+					0.1f));
+			}
+		}
+
+
+		public static void SetSecondaryAttackText(string text)
+		{
+			if (string.IsNullOrEmpty(text))
+				Instance.secondaryAttackText.transform.parent.gameObject.SetActive(false);
+			if (string.IsNullOrEmpty(text))
+				Instance.secondaryAttackText.transform.parent.gameObject.SetActive(true);
+
+			if (Instance.secondaryAttackText.text != text)
+			{
+				Instance.secondaryAttackText.text = text;
+				Instance.StartCoroutine(Instance.secondaryAttackText.Flicker(
+					Color.yellow,
+					Instance.secondaryAttackText.color,
+					null,
+					1f,
+					0.1f));
+			}
+		}
+
+
+		public static void ShowHintText(string text, float seconds)
+		{
+			Instance.hintText.text = text;
+			Instance.WaitForSeconds(
+				seconds,
+				() =>
+					{
+						Instance.hintText.text = "";
+					});
+		}
+
+
+		public static void ShowTooltip(string text, Vector2 position)
+		{
+			if (Instance.tooltipText.text != text)
+				Instance.tooltipText.text = text;
+			Instance.tooltipText.transform.position = position;
+			Instance.tooltipText.gameObject.SetActive(true);
+		}
+
+
 		public void Awake()
 		{
 			EnforceSingleInstance();
@@ -119,7 +227,10 @@
 		{
 			this.sightUI.gameObject.SetActive(true);
 			this.sightUI.UpdateSight(PlayerMicrobe.SightDistance);
-			this.overworldMicrobes = FindObjectsOfType<Microbe>();
+			this.overworldMicrobes = FindObjectsOfType<Microbe>().ToList();
+			this.overworldMicrobes.Remove(Game.PlayerMicrobe);
+
+			ShowHintText("Eliminate all enemy microbes. Dash Attack to imobilize, then Inject to enter them.", 8f);
 		}
 
 
@@ -130,7 +241,7 @@
 			{
 				//If I am the first instance, make me the Singleton
 				_instance = this;
-				DontDestroyOnLoad(this.gameObject);
+				//DontDestroyOnLoad(this.gameObject);
 			}
 			else
 			{

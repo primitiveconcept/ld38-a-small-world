@@ -13,6 +13,9 @@
 		public const string MouseScrollwheel = "Mouse ScrollWheel";
 		public const string VerticalAxis = "Vertical";
 
+		private float fire1HoldTime;
+		private float fire2HoldTime;
+
 
 		#region Properties
 		/// <summary>
@@ -30,35 +33,47 @@
 		#endregion
 
 
+		public void Start()
+		{
+			var primaryAttack = GetComponent<PrimaryAttack>();
+			if (primaryAttack != null)
+				Game.SetPrimaryAttackText(primaryAttack.AttackName);
+			else
+				Game.SetPrimaryAttackText("(None)");
+
+			var secondaryAttack = GetComponent<SecondaryAttack>();
+			if (secondaryAttack != null)
+				Game.SetSecondaryAttackText(secondaryAttack.AttackName);
+			else
+				Game.SetSecondaryAttackText("(None)");
+		}
+
+
 		public override void ProcessAttackInput()
 		{
-			if (CrossPlatformInputManager.GetButtonDown(Fire1)
-				|| CrossPlatformInputManager.GetButtonDown(Fire2))
+			Vector3 target = new Vector3(
+					CrossPlatformInputManager.GetAxisRaw(HorizontalAxis),
+					CrossPlatformInputManager.GetAxisRaw(VerticalAxis))
+				.normalized;
+
+			if (target.x == 0
+				&& target.y == 0)
 			{
-				Vector3 target = new Vector3(
-						CrossPlatformInputManager.GetAxisRaw(HorizontalAxis),
-						CrossPlatformInputManager.GetAxisRaw(VerticalAxis))
-					.normalized;
+				target = (MousePosition - this.transform.position).normalized;
+			}
 
-				if (target.x == 0
-					&& target.y == 0)
-				{
-					target = (MousePosition - this.transform.position).normalized;
-				}
+			if (CrossPlatformInputManager.GetButton(Fire1))
+			{
+				PrimaryAttack primaryAttack = this.PrimaryAttack;
+				if (primaryAttack != null)
+					primaryAttack.Attack(target.x, target.y);
+			}
 
-				if (CrossPlatformInputManager.GetButtonDown(Fire1))
-				{
-					PrimaryAttack primaryAttack = this.PrimaryAttack;
-					if (primaryAttack != null)
-						primaryAttack.Attack(target.x, target.y);
-				}
-
-				else if (CrossPlatformInputManager.GetButtonDown(Fire2))
-				{
-					SecondaryAttack secondaryAttack = this.SecondaryAttack;
-					if (secondaryAttack != null)
-						secondaryAttack.Attack(target.x, target.y);
-				}
+			else if (CrossPlatformInputManager.GetButton(Fire2))
+			{
+				SecondaryAttack secondaryAttack = this.SecondaryAttack;
+				if (secondaryAttack != null)
+					secondaryAttack.Attack(target.x, target.y);
 			}
 		}
 
@@ -76,7 +91,7 @@
 			{
 				return;
 			}
-
+			
 			this.Microbe.Move(xMovement, yMovement);
 		}
 
@@ -101,6 +116,19 @@
 
 		public override void Update()
 		{
+			if (CrossPlatformInputManager.GetButtonDown(Fire1))
+				this.fire1HoldTime = Time.deltaTime;
+			if (CrossPlatformInputManager.GetButtonDown(Fire2))
+				this.fire2HoldTime = Time.deltaTime;
+			if (CrossPlatformInputManager.GetButton(Fire1))
+				this.fire1HoldTime += Time.deltaTime;
+			if (CrossPlatformInputManager.GetButton(Fire2))
+				this.fire2HoldTime += Time.deltaTime;
+			if (CrossPlatformInputManager.GetButtonUp(Fire1))
+				this.fire1HoldTime = 0;
+			if (CrossPlatformInputManager.GetButtonUp(Fire2))
+				this.fire2HoldTime = 0;
+
 			base.Update();
 
 			ProcessMicrobeScalerInput();

@@ -24,7 +24,7 @@
 		private GameObject owner;
 
 
-		public event Action DidDamage;
+		public event Action<IDamageable> DidDamage;
 
 
 		#region Properties
@@ -77,16 +77,23 @@
 			if ((this.collisionMask.value & (1 << target.gameObject.layer)) == 0)
 				return;
 
+			if (this.owner.GetComponent<EnemyMicrobeInput>() != null
+				&& target.GetComponent<EnemyMicrobeInput>() != null)
+			{
+				return;
+			}
+
 			if (target.gameObject == this.owner)
 				return;
 
 			// Deal damage.
-			damageable.TakeDamage(this.damage);
+			int damage = damageable.TakeDamage(this.damage);
 			if (this.owner != null)
 				this.gameObject.SetActive(false);
 
 			// Instantiate effect if there is one.
-			if (this.damageEffect != null)
+			if (damage > 0
+				&& this.damageEffect != null)
 			{
 				Instantiate(
 					this.damageEffect,
@@ -95,7 +102,7 @@
 			}
 
 			if (this.DidDamage != null)
-				this.DidDamage();
+				this.DidDamage(damageable);
 		}
 
 

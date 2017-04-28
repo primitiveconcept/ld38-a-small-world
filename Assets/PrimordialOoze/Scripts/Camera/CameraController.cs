@@ -77,7 +77,23 @@ namespace PrimordialOoze
 		{
 			get { return this.originalOrthographicSize; }
 		}
+
+
+		public Transform Target
+		{
+			get { return this.target; }
+			set { this.target = value; }
+		}
 		#endregion
+
+
+		public void Awake()
+		{
+			this.camera = GetComponent<Camera>();
+			FollowsPlayer = true;
+			this.currentZoom = MinimumZoom;
+			this.originalOrthographicSize = this.camera.orthographicSize;
+		}
 
 
 		/// <summary>
@@ -228,6 +244,24 @@ namespace PrimordialOoze
 		}
 
 
+		public void Start()
+		{
+			// player and level bounds initialization
+			this.target = FindObjectOfType<PlayerMicrobeInput>().transform;
+			if (this.target.GetComponent<GamePhysics>() == null)
+				return;
+			this.targetController = this.target.GetComponent<GamePhysics>();
+			this.cameraBounds = FindObjectsOfType<CameraBounds>();
+
+			// we store the target's last position
+			this.lastTargetPosition = this.target.position;
+			this.offsetZ = (transform.position - this.target.position).z;
+			transform.parent = null;
+
+			HandleAutoZoom();
+		}
+
+
 		#region Helper Methods
 		/// <summary>
 		/// Gets the levelbounds coordinates to lock the camera into the level
@@ -288,38 +322,6 @@ namespace PrimordialOoze
 			}
 
 			GetCameraBounds();
-		}
-
-
-		/// <summary>
-		/// Initialization
-		/// </summary>
-		private void Start()
-		{
-			// we get the camera component
-			this.camera = GetComponent<Camera>();
-
-			// We make the camera follow the player
-			FollowsPlayer = true;
-			this.currentZoom = MinimumZoom;
-
-			// player and level bounds initialization
-			this.target = FindObjectOfType<PlayerMicrobeInput>().transform;
-			if (this.target.GetComponent<GamePhysics>() == null)
-				return;
-			this.targetController = this.target.GetComponent<GamePhysics>();
-
-			this.cameraBounds = FindObjectsOfType<CameraBounds>();
-
-			// we store the target's last position
-			this.lastTargetPosition = this.target.position;
-			this.offsetZ = (transform.position - this.target.position).z;
-			transform.parent = null;
-
-			//lookDirectionModifier=new Vector3(0,0,0);
-			this.originalOrthographicSize = this.camera.orthographicSize;
-
-			HandleAutoZoom();
 		}
 		#endregion
 	}

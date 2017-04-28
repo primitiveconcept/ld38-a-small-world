@@ -16,12 +16,14 @@
 
 		public override void Activate()
 		{
+			Game.ShowHintText("Coccus Sight Range increased!", 3f);
 			IncreaseMicrobeStats(this.MicrobeData);
 		}
 
 
 		public override void Deactivate()
 		{
+			Game.ShowHintText("Coccus Sight Range decreased.", 3f);
 			DecreaseMicrobeStats(this.MicrobeData);
 		}
 

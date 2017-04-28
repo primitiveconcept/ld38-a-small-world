@@ -9,6 +9,8 @@
 		[SerializeField]
 		private ContactDamage attackDamageField;
 
+		[SerializeField]
+		private GameObject dashEffect;
 
 		public override void Attack(float x, float y)
 		{
@@ -35,6 +37,14 @@
 				new Vector2(x, y).normalized
 				* (this.Microbe.AttackSpeed + this.Microbe.MaxSpeed));
 			this.attackDamageField.gameObject.SetActive(true);
+			if (this.dashEffect != null)
+			{
+				Instantiate(
+					this.dashEffect,
+					this.transform.position,
+					this.transform.rotation);
+			}
+
 			StartCoroutine(WaitToFinishAttack(x, y));
 		}
 
@@ -53,12 +63,20 @@
 		}
 
 
-		private void Recoil()
+		private void Recoil(IDamageable damageable)
 		{
-			Vector2 direction = this.Microbe.GamePhysics.Velocity * -1;
-			this.Microbe.GamePhysics.SetMovement(
-				direction.normalized
-				* (this.Microbe.AttackSpeed + this.Microbe.MaxSpeed));
+			Microbe microbe = damageable as Microbe;
+			if (microbe != null)
+			{
+				Vector2 direction = this.Microbe.GamePhysics.Velocity * -1;
+				this.Microbe.GamePhysics.SetMovement(
+					direction.normalized
+					* (this.Microbe.AttackSpeed + this.Microbe.MaxSpeed));
+			}
+			else
+			{
+				this.Microbe.GamePhysics.SetMovement(Vector2.zero);
+			}
 		}
 
 

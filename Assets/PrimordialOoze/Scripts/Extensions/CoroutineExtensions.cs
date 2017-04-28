@@ -25,7 +25,7 @@
 
 
 		#region Helper Methods
-		private static IEnumerator Wait(Action callback)
+		public static IEnumerator Wait(Action callback)
 		{
 			yield return null;
 
@@ -34,7 +34,7 @@
 		}
 
 
-		private static IEnumerator Wait(float seconds, Action callback)
+		public static IEnumerator Wait(float seconds, Action callback)
 		{
 			yield return new WaitForSeconds(seconds);
 

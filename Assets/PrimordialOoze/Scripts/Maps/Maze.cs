@@ -2,6 +2,7 @@
 {
 	using System;
 	using System.Security.Cryptography;
+	using UnityEngine;
 
 
 	public class Maze
@@ -45,17 +46,27 @@
 		{
 			this.cells = new int[size, size];
 
+			int mid = (int)(size / 2) - 1;
 			for (int i = 0; i < size; i++)
 			{
 				for (int j = 0; j < size; j++)
 				{
-					if (i != 0
+					// Nucleus center
+					if (i == mid
+						&& j == mid)
+					{
+						this.cells[i, j] = 4;
+					}
+					// Nucleus wall
+					else if (i != 0
 						&& i != this.size - 1
 						&& j != 0
 						&& j != this.size - 1)
 					{
 						this.cells[i, j] = 1;
 					}
+
+					// Nucleus membrane
 					else
 						this.cells[i, j] = 2;
 
@@ -120,7 +131,8 @@
 					case 1:
 						if (x - 2 <= 0)
 							continue;
-						if (this.cells[x - 2, y] != 0)
+						if (this.cells[x - 2, y] != 0
+							&& this.cells[x - 2, y] != 4)
 						{
 							this.cells[x - 2, y] = 0;
 							this.cells[x - 1, y] = 0;
@@ -132,7 +144,8 @@
 					case 2:
 						if (y + 2 >= this.size - 1)
 							continue;
-						if (this.cells[x, y + 2] != 0)
+						if (this.cells[x, y + 2] != 0
+							&& this.cells[x, y + 2] != 4)
 						{
 							this.cells[x, y + 2] = 0;
 							this.cells[x, y + 1] = 0;
@@ -144,7 +157,8 @@
 					case 3:
 						if (x + 2 >= this.size - 1)
 							continue;
-						if (this.cells[x + 2, y] != 0)
+						if (this.cells[x + 2, y] != 0
+							&& this.cells[x + 2, y] != 4)
 						{
 							this.cells[x + 2, y] = 0;
 							this.cells[x + 1, y] = 0;
@@ -156,7 +170,8 @@
 					case 4:
 						if (y - 2 <= 0)
 							continue;
-						if (this.cells[x, y - 2] != 0)
+						if (this.cells[x, y - 2] != 0
+							&& this.cells[x, y - 2] != 4)
 						{
 							this.cells[x, y - 2] = 0;
 							this.cells[x, y - 1] = 0;

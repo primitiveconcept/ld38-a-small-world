@@ -11,11 +11,8 @@
 			Vector3 newScale = this.transform.localScale * scalarAdjustment;
 
 			Microbe microbe = GetComponent<Microbe>();
-			float largestMicrobeScale = Microbe.GetScaleForMaxHealth(
-				microbe.OriginalScale,
-				microbe.MaxHealth).x;
+			float largestMicrobeScale = microbe.GetScaleForMaxHealth().x;
 			float smallestMicrobeScale = largestMicrobeScale / 2;
-			//float smallestMicrobeScale = Game.MicrobeMap.GetSmallestMicrobeScale();
 
 			if (newScale.x < smallestMicrobeScale)
 				newScale = new Vector3(smallestMicrobeScale, smallestMicrobeScale, 1);
@@ -25,7 +22,7 @@
 			if (this.transform.localScale != newScale)
 			{
 				this.transform.localScale = newScale;
-				microbe.UpdateCameraBasedOnScaled();
+				microbe.UpdateCameraScale();
 			}
 		}
 

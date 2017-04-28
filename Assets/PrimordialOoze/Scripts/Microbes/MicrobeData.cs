@@ -41,6 +41,9 @@
 		[SerializeField]
 		private int currentHealth;
 
+		[SerializeField]
+		private int defense = 0;
+
 		private MapData map;
 		private MicrobeData parentMicrobeData;
 
@@ -85,6 +88,13 @@
 		{
 			get { return this.deceleration; }
 			set { this.deceleration = value; }
+		}
+
+
+		public int Defense
+		{
+			get { return this.defense; }
+			set { this.defense = value; }
 		}
 
 

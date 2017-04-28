@@ -34,7 +34,8 @@
 			Empty = 0,
 			Wall = 1,
 			DestroyableWall = 2,
-			ExitNode = 3
+			ExitNode = 3,
+			Nucleus = 4
 		}
 
 
@@ -72,6 +73,13 @@
 			get { return this.maxHealth; }
 			private set { this.maxHealth = value; }
 		}
+
+
+		public SpriteRenderer SpriteRenderer
+		{
+			get { return this.spriteRenderer; }
+			set { this.spriteRenderer = value; }
+		}
 		#endregion
 
 
@@ -81,13 +89,16 @@
 		}
 
 
-		public int TakeDamage(int amount)
+		public virtual int TakeDamage(int amount)
 		{
 			amount = this.DeductHealth(amount);
 			if (amount > 0)
 			{
-				StartCoroutine(this.spriteRenderer.Flicker(
-					Color.red, this.spriteRenderer.color, null));
+				StartCoroutine(
+					this.spriteRenderer.Flicker(
+						Color.red,
+						this.spriteRenderer.color,
+						null));
 
 				if (this.Damaged != null)
 					this.Damaged(this);

@@ -13,6 +13,7 @@
 	{
 		public const string AttackAnimation = "Attack";
 		public const string DeathAnimation = "Death";
+		public const float HealthScalingFactor = 20;
 		public const string IdleAnimation = "Idle";
 		public const string InjectAnimation = "Inject";
 
@@ -29,12 +30,16 @@
 		private float invulnerabilityTimeLeft;
 
 		[SerializeField]
+		private GameObject deflectedDamageEffect;
+
+		[SerializeField]
 		private bool orientMovement = false;
 
 		[SerializeField]
 		private bool attacksBackward = false;
 
 		private SpriteRenderer spriteRenderer;
+		private CameraController cameraController;
 		private Animator animator;
 		private GamePhysics gamePhysics;
 		private Color originalColor;
@@ -123,6 +128,13 @@
 		{
 			get { return this.data.Deceleration; }
 			set { this.data.Deceleration = value; }
+		}
+
+
+		public int Defense
+		{
+			get { return this.data.Defense; }
+			set { this.data.Defense = value; }
 		}
 
 
@@ -220,7 +232,11 @@
 		public float SightDistance
 		{
 			get { return this.data.SightDistance; }
-			set { this.data.SightDistance = value; }
+			set
+			{
+				this.data.SightDistance = value;
+				UpdateSight();
+			}
 		}
 
 
@@ -242,7 +258,7 @@
 			Vector3 originalScale,
 			int maxHealth)
 		{
-			float scalar = maxHealth / 100f;
+			float scalar = maxHealth / HealthScalingFactor;
 			Vector3 scale = originalScale * scalar;
 
 			return scale;
@@ -251,6 +267,7 @@
 
 		public void Awake()
 		{
+			this.cameraController = Camera.main.GetComponent<CameraController>();
 			this.spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 			this.animator = GetComponentInChildren<Animator>();
 			this.gamePhysics = GetComponent<GamePhysics>();
@@ -258,28 +275,60 @@
 			this.originalColor = this.spriteRenderer.color;
 			this.currentColor = this.spriteRenderer.color;
 			this.CurrentHealth = this.MaxHealth;
-			this.Killed += OnKilled;
 			Initialize();
 		}
 
 
 		public bool CanBeInjectedBy(Microbe injector)
 		{
-			if (this.GetCurrentHealthPercent() <= 0.5f
-				&& injector.transform.localScale.x <= this.transform.localScale.x / 2)
+			if (this.CurrentHealth > 0)
 			{
-				return true;
-			}
-			else
-			{
+				Game.ShowHintText("Enemy needs to be immobilized in order to be Injected.", 6f);
+				StartCoroutine(
+					this.spriteRenderer.Flicker(
+						Color.white,
+						this.currentColor,
+						UpdateOpacity,
+						this.invulnerabilityDuration));
+
 				return false;
 			}
+
+			if (injector.transform.lossyScale.x >= this.transform.lossyScale.x)
+			{
+				Game.ShowHintText("You must be smaller than the enemy to Inject them. Use the mouse wheel to change size!", 6f);
+				StartCoroutine(
+					this.spriteRenderer.Flicker(
+						Color.white,
+						this.currentColor,
+						UpdateOpacity,
+						this.invulnerabilityDuration));
+
+				return false;
+			}
+
+			return true;
+		}
+
+
+		public bool CheckImmobilized()
+		{
+			if (this.CurrentHealth == 0
+				&& this.Killed != null)
+			{
+				Debug.Log("Killed.");
+				this.Killed();
+
+				return true;
+			}
+
+			return false;
 		}
 
 
 		public void CompleteInjection(Microbe injector)
 		{
-			Game.MicrobeMap.SetCurrentMicrobe(this.Data);
+			Game.MicrobeMap.EnterMicrobe(this.Data);
 			if (this.Data.ParentMicrobeData != null)
 				Destroy(this.gameObject);
 		}
@@ -310,10 +359,28 @@
 		}
 
 
+		public float GetOrthographicCamSizeForScale()
+		{
+			return
+				(this.cameraController.OriginalOrthographicSize
+				* this.transform.localScale.x)
+				+ this.SightDistance / 2;
+		}
+
+
+		public Vector3 GetScaleForMaxHealth()
+		{
+			return GetScaleForMaxHealth(
+				this.originalScale,
+				this.MaxHealth);
+		}
+
+
 		public void Initialize()
 		{
 			UpdateOpacity();
 			UpdateScale();
+			UpdateSight();
 		}
 
 
@@ -357,17 +424,6 @@
 		}
 
 
-		public void OnKilled()
-		{
-			MicrobeData microbeParent = Game.MicrobeMap.CurrentMicrobe;
-			if (microbeParent != null
-				&& microbeParent.Map.Microbes.Contains(this.data))
-			{
-				microbeParent.Map.Microbes.Remove(this.data);
-			}
-		}
-
-
 		public void RotateAwayFrom(float x, float y)
 		{
 			float zRotation = Mathf.Atan2(-y, -x) * Mathf.Rad2Deg;
@@ -384,6 +440,40 @@
 
 		public int TakeDamage(int amount)
 		{
+			if (CheckImmobilized())
+				return 0;
+
+			amount -= this.Defense;
+			if (amount <= 0)
+			{
+				if (this.Input.GetType() != typeof(PlayerMicrobeInput))
+				{
+					Game.ShowHintText(
+						"This enemy appears to be too tough. " +
+						"Try Injecting into another enemy, " +
+						"raise their stats, and then take them " +
+						"over to fight back.",
+						8f);
+				}
+
+				if (this.deflectedDamageEffect != null)
+				{
+					Instantiate(
+						this.deflectedDamageEffect,
+						this.transform.position,
+						this.transform.rotation);
+				}
+
+				StartCoroutine(
+					this.spriteRenderer.Flicker(
+						Color.white,
+						this.currentColor,
+						UpdateOpacity,
+						this.invulnerabilityDuration));
+
+				return 0;
+			}
+
 			amount = this.DeductHealth(amount);
 			if (amount > 0)
 			{
@@ -396,13 +486,6 @@
 
 				if (this.Damaged != null)
 					this.Damaged(this);
-
-				if (this.CurrentHealth == 0
-					&& this.Killed != null)
-				{
-					Debug.Log("Killed.");
-					this.Killed();
-				}
 			}
 
 			return amount;
@@ -412,12 +495,20 @@
 		public void Update()
 		{
 			this.CountdownInvulnerabilityTimeLeft();
+
+			if (this.Input is PlayerMicrobeInput && false)
+			{
+				Game.ScrollingBackground.HorizontalSpeed = 
+					(this.gamePhysics.Velocity.x * 0.02f) + Mathf.Sign(this.gamePhysics.Velocity.x);
+				Game.ScrollingBackground.VerticalSpeed = 
+					this.gamePhysics.Velocity.y * 0.02f + Mathf.Sign(this.gamePhysics.Velocity.y);
+			}
 		}
 
 
-		public void UpdateCameraBasedOnScaled()
+		public void UpdateCameraScale()
 		{
-			Camera.main.orthographicSize = 15 * this.transform.localScale.x;
+			Camera.main.orthographicSize = GetOrthographicCamSizeForScale();
 		}
 
 
@@ -430,11 +521,17 @@
 
 		public void UpdateScale()
 		{
-			this.transform.localScale =
-				GetScaleForMaxHealth(this.originalScale, this.MaxHealth);
+			this.transform.localScale = GetScaleForMaxHealth();
 
 			if (GetComponent<PlayerMicrobeInput>() != null)
-				UpdateCameraBasedOnScaled();
+				UpdateCameraScale();
+		}
+
+
+		public void UpdateSight()
+		{
+			if (GetComponent<PlayerMicrobeInput>() != null)
+				Game.SightUi.UpdateSight(this.SightDistance);
 		}
 
 
@@ -476,7 +573,7 @@ namespace PrimordialOoze
 
 				if (GUILayout.Button("Load Internal Map"))
 				{
-					Game.MicrobeMap.SetCurrentMicrobe(this.microbe.Data);
+					Game.MicrobeMap.EnterMicrobe(this.microbe.Data);
 				}
 			}
 		}

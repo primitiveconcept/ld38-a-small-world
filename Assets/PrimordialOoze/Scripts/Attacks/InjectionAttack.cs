@@ -2,6 +2,7 @@
 {
 	using System;
 	using System.Collections;
+	using PrimordialOoze.Extensions.Camera;
 	using PrimordialOoze.Extensions.Coroutines;
 	using UnityEngine;
 
@@ -10,6 +11,9 @@
 	{
 		[SerializeField]
 		private GameObject injectionField;
+
+		[SerializeField]
+		private GameObject injectionEffect;
 
 
 		public override void Attack(float x, float y)
@@ -57,13 +61,19 @@
 				0.5f,
 				() =>
 					{
-						StartCoroutine(
-							ZoomCamera(
-								() =>
+						Camera.main.Zoom(this.transform.lossyScale.x, 0.2f,
+							() =>
+								{
+									if (this.injectionEffect != null)
 									{
-										injectable.CompleteInjection(this.Microbe);
-										this.Microbe.Animator.Play(Microbe.IdleAnimation);
-									}));
+										Instantiate(
+											this.injectionEffect,
+											this.transform.position,
+											this.transform.rotation);
+									}
+									injectable.CompleteInjection(this.Microbe);
+									this.Microbe.Animator.Play(Microbe.IdleAnimation);
+								});
 					});
 		}
 
@@ -80,21 +90,6 @@
 			this.Microbe.GamePhysics.SetMovement(Vector2.zero);
 			this.injectionField.SetActive(false);
 			StartCoroutine(this.Microbe.WaitForCooldownEnd());
-		}
-
-
-		private IEnumerator ZoomCamera(Action callback)
-		{
-			while (Camera.main.orthographicSize > this.transform.localScale.x + 0.5f)
-			{
-				Camera.main.orthographicSize = Mathf.Lerp(
-					Camera.main.orthographicSize,
-					this.transform.localScale.x,
-					Time.deltaTime * 15);
-				yield return null;
-			}
-
-			callback();
 		}
 		#endregion
 	}

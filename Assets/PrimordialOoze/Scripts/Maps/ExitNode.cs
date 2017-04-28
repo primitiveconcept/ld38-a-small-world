@@ -1,6 +1,8 @@
 ﻿namespace PrimordialOoze
 {
+	using PrimordialOoze.Extensions.Camera;
 	using UnityEngine;
+
 
 	public class ExitNode : MonoBehaviour
 	{
@@ -15,17 +17,27 @@
 				return;
 			}
 
-			var exitedMicrobe = Game.MicrobeMap.ExitCurrentMicrobe();
+			Microbe playerMicrobe = Game.PlayerMicrobe;
+			Microbe exitedMicrobe = Game.MicrobeMap.ExitCurrentMicrobe();
 
 			if (exitedMicrobe != null)
 			{
-				exitedMicrobe.CurrentHealth = exitedMicrobe.MaxHealth;
-				exitedMicrobe.Input.Locked = false;
-				exitedMicrobe.SpriteRenderer.color = exitedMicrobe.OriginalColor;
-				exitedMicrobe.CurrentColor = exitedMicrobe.OriginalColor;
+				exitedMicrobe.CheckImmobilized();
 				Game.Player.transform.position = exitedMicrobe.transform.position;
-				Game.Player.transform.localScale = Vector3.one * Game.MicrobeMap.GetSmallestMicrobeScale();
-				Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
+				playerMicrobe.transform.localScale = playerMicrobe.GetScaleForMaxHealth();
+				Camera.main.Zoom(
+					playerMicrobe.GetOrthographicCamSizeForScale(),
+					0.2f,
+					() =>
+						{
+							Game.PlayerMicrobe.UpdateCameraScale();
+						});
+			}
+			else
+			{
+				Debug.LogWarning("Exited microbe null for some reason.");
+				Game.Player.transform.position = Vector2.zero;
+				Game.PlayerMicrobe.UpdateCameraScale();
 			}
 		}
 	}

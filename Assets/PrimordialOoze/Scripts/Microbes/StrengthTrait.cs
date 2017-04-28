@@ -16,12 +16,14 @@
 
 		public override void Activate()
 		{
+			Game.ShowHintText("Coccus Attack Strength increased!", 3f);
 			IncreaseMicrobeStats(this.MicrobeData);
 		}
 
 
 		public override void Deactivate()
 		{
+			Game.ShowHintText("Coccus Attack Strength decreased.", 3f);
 			DecreaseMicrobeStats(this.MicrobeData);
 		}
 

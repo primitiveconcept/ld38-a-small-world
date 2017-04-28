@@ -2,6 +2,7 @@
 {
 	using System;
 	using System.Collections.Generic;
+	using UnityEngine;
 	using Random = UnityEngine.Random;
 
 
@@ -39,8 +40,8 @@
 		#region Helper Methods
 		private MicrobeTrait CreateRandomTrait()
 		{
-			int randomType = Random.Range(0, 3);
-			int randomValue = Random.Range(1, 5);
+			int randomType = Random.Range(0, 5);
+			int randomValue = Random.Range(1, 6);
 			MicrobeTrait newTrait = null;
 			switch (randomType)
 			{
@@ -56,6 +57,9 @@
 				case 3:
 					newTrait = new StrengthTrait();
 					break;
+				case 4:
+					newTrait = new DefenseTrait();
+					break;
 			}
 
 			newTrait.Value = randomValue;
@@ -66,7 +70,10 @@
 
 		private void PopulateNewMicrobes(MicrobeData parent)
 		{
-			int numberOfMicrobes = (int)Math.Floor(parent.MaxHealth / 30f);
+			Debug.Log("Created new microbe child data.");
+			int numberOfMicrobes = (int)Math.Floor(
+				parent.MaxHealth
+				/ (Microbe.HealthScalingFactor / 3));
 			if (this.microbes != null)
 				this.microbes.Clear();
 			else
@@ -83,7 +90,9 @@
 
 		private void PopulateNewTraits(MicrobeData parent)
 		{
-			int numberOfTraits = (int)Math.Ceiling(parent.MaxHealth / 30f);
+			int numberOfTraits = (int)Math.Ceiling(
+				parent.MaxHealth
+				/ (Microbe.HealthScalingFactor / 3));
 			this.traits = new MicrobeTrait[numberOfTraits];
 			for (int i = 0; i < numberOfTraits; i++)
 			{

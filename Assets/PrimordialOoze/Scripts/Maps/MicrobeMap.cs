@@ -2,15 +2,15 @@
 {
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
+	using PrimordialOoze.Extensions.Camera;
 	using PrimordialOoze.Extensions.Vectors;
 	using UnityEngine;
 
 
 	public class MicrobeMap : MonoBehaviour
 	{
-		public const float NucleusToHealthRatio = 0.1f;
-		public const float PerimeterToHealthRatio = 0.2f;
+		public const float NucleusToHealthRatio = 10 / Microbe.HealthScalingFactor;
+		public const float PerimeterToHealthRatio = 16 / Microbe.HealthScalingFactor;
 
 		[SerializeField]
 		private Microbe microbePrefab;
@@ -21,12 +21,15 @@
 		[SerializeField]
 		private GameObject[] traitPrefabs;
 
+		[SerializeField]
+		private GameObject veinPrefab;
+
 		private MicrobeData currentMicrobe;
 		private GameObject[,] nucleusCells;
 		private List<GameObject> perimeterCells;
-		private Microbe[] microbes;
+		private List<Microbe> microbes;
 		private MicrobeTraitToggle[] traits; // Must sort according to type enum.
-
+		private GameObject veinsInstance;
 
 		#region Properties
 		public MicrobeData CurrentMicrobe
@@ -35,7 +38,7 @@
 		}
 
 
-		public Microbe[] Microbes
+		public List<Microbe> Microbes
 		{
 			get { return this.microbes; }
 		}
@@ -67,9 +70,10 @@
 			if (this.microbes == null)
 				return;
 
-			for (int i = 0; i < this.microbes.Length; i++)
+			for (int i = 0; i < this.microbes.Count; i++)
 			{
 				if (this.microbes[i] != null)
+					//this.microbes[i].gameObject.SetActive(false);
 					Destroy(this.microbes[i].gameObject);
 			}
 		}
@@ -85,6 +89,9 @@
 				if (cell != null)
 					Destroy(cell.gameObject);
 			}
+
+			if (this.veinsInstance != null)
+				Destroy(this.veinsInstance.gameObject);
 		}
 
 
@@ -114,6 +121,21 @@
 		}
 
 
+		public void EnterMicrobe(MicrobeData microbeData)
+		{
+			this.currentMicrobe = microbeData;
+			GenerateNewMap();
+			Game.Player.transform.SetParent(this.transform);
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
+			Game.Player.transform.localPosition = GetMapCellCoordinate(0, 0, offset);
+			Game.Player.transform.localScale = Game.PlayerMicrobe.GetScaleForMaxHealth();
+			Camera.main.backgroundColor = Game.InsideMicrobeColor;
+			Camera.main.Zoom(
+				Game.PlayerMicrobe.GetOrthographicCamSizeForScale(),
+				0.2f);
+		}
+
+
 		/// <summary>
 		/// Exit current microbe map.
 		/// </summary>
@@ -126,27 +148,17 @@
 			// Exited microbe will still exist in MicrobeMap.
 			// Set map to parent, so exited microbe will be instantiated.
 			if (this.currentMicrobe.ParentMicrobeData != null)
-				SetCurrentMicrobe(exitedMicrobeData.ParentMicrobeData);
+				EnterMicrobe(exitedMicrobeData.ParentMicrobeData);
+
+			// Back to overworld.
+			else
+			{
+				Camera.main.backgroundColor = Game.OverworldColor;
+			}
 
 			exitedMicrobe = Game.FindMicrobe(exitedMicrobeData);
-			
+
 			return exitedMicrobe;
-		}
-
-
-		
-
-
-		public Vector3 GetRadialPosition(int step)
-		{
-			step++;
-			if (step % 2 == 0)
-				step *= -1;
-
-			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
-			Vector3 position = GetMapCellCoordinate(step, step, offset);
-
-			return position;
 		}
 
 
@@ -154,13 +166,13 @@
 		{
 			MapData internalMap = this.currentMicrobe.Map;
 			int numberOfMicrobes = internalMap.Microbes.Count;
-			this.microbes = new Microbe[numberOfMicrobes];
+			this.microbes = new List<Microbe>();
 			for (int i = 0; i < numberOfMicrobes; i++)
 			{
-				this.microbes[i] = Instantiate(this.microbePrefab, this.transform);
+				this.Microbes.Add(Instantiate(this.microbePrefab, this.transform));
 				this.microbes[i].Data = internalMap.Microbes[i];
-				this.microbes[i].CurrentHealth = this.microbes[i].MaxHealth;
 				this.microbes[i].transform.localPosition = GetRadialPosition(i);
+				this.microbes[i].Initialize();
 			}
 		}
 
@@ -178,6 +190,37 @@
 
 			ClearTraits();
 			GenerateTraits();
+		}
+
+
+		public void GenerateNucleus()
+		{
+			Maze baseMaze = new Maze(this.NucleusSize);
+			this.nucleusCells = new GameObject[this.NucleusSize, this.NucleusSize];
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f);
+
+			for (int x = 0; x < this.NucleusSize; x++)
+			{
+				for (int y = 0; y < this.NucleusSize; y++)
+				{
+					if (baseMaze[x, y] != 0)
+					{
+						GameObject prefab = GetMapCellPrefab((MapCell.Type)baseMaze[x, y]);
+
+						this.nucleusCells[x, y] =
+							InstantiateIntoMapCell(x, y, prefab, offset);
+
+						if (baseMaze[x, y] == 4)
+						{
+							this.veinsInstance = InstantiateIntoMapCell(x, y, this.veinPrefab, offset);
+							this.veinsInstance.transform.localScale = new Vector3(
+								this.NucleusSize * 0.15f,
+								this.NucleusSize * 0.15f,
+								1);
+						}
+					}
+				}
+			}
 		}
 
 
@@ -274,9 +317,16 @@
 		}
 
 
-		public float GetSmallestMicrobeScale()
+		public Vector3 GetRadialPosition(int step)
 		{
-			return this.transform.localScale.x * 1.5f;
+			step++;
+			if (step % 2 == 0)
+				step *= -1;
+
+			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
+			Vector3 position = GetMapCellCoordinate(step, step, offset);
+
+			return position;
 		}
 
 
@@ -287,45 +337,7 @@
 		}
 
 
-		public void SetCurrentMicrobe(MicrobeData microbeData)
-		{
-			this.currentMicrobe = microbeData;
-			GenerateNewMap();
-			this.transform.localScale =
-				Microbe.GetScaleForMaxHealth(Vector3.one, microbeData.MaxHealth);
-			Game.Player.transform.SetParent(this.transform);
-			Vector2 offset = new Vector2(this.PerimeterRadius * 0.50f, this.PerimeterRadius * 0.50f);
-			Game.Player.transform.localPosition = GetMapCellCoordinate(0, 0, offset);
-			Game.Player.transform.localScale = Microbe.GetScaleForMaxHealth(
-				Game.PlayerMicrobe.OriginalScale,
-				Game.PlayerMicrobe.MaxHealth);
-			Game.PlayerMicrobe.UpdateCameraBasedOnScaled();
-		}
-
-
 		#region Helper Methods
-		private void GenerateNucleus()
-		{
-			Maze baseMaze = new Maze(this.NucleusSize);
-			this.nucleusCells = new GameObject[this.NucleusSize, this.NucleusSize];
-			Vector2 offset = new Vector2(this.PerimeterRadius * 0.75f, this.PerimeterRadius * 0.75f);
-
-			for (int x = 0; x < this.NucleusSize; x++)
-			{
-				for (int y = 0; y < this.NucleusSize; y++)
-				{
-					if (baseMaze[x, y] != 0)
-					{
-						GameObject prefab = GetMapCellPrefab((MapCell.Type)baseMaze[x, y]);
-
-						this.nucleusCells[x, y] =
-							InstantiateIntoMapCell(x, y, prefab, offset);
-					}
-				}
-			}
-		}
-
-
 		private GameObject InstantiateIntoMapCell(int x, int y, GameObject prefab, Vector2? offset = null)
 		{
 			GameObject cellObject;

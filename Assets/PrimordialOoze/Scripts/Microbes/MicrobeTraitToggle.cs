@@ -11,6 +11,12 @@
 		[SerializeField]
 		private MicrobeTrait data;
 
+		[SerializeField]
+		private GameObject switchOnEffect;
+
+		[SerializeField]
+		private GameObject switchOffEffect;
+
 		private SpriteRenderer spriteRenderer;
 
 		public event Action<IDamageable> Damaged;
@@ -64,6 +70,25 @@
 		public void Toggle()
 		{
 			this.data.Toggle();
+
+			if (this.data.Activated
+				&& this.switchOnEffect != null)
+			{
+				Instantiate(
+					this.switchOnEffect,
+					this.transform.position,
+					this.transform.rotation);
+			}
+			else if (!this.data.Activated
+				&& this.switchOffEffect != null)
+			{
+				Instantiate(
+					this.switchOffEffect,
+					this.transform.position,
+					this.transform.rotation);
+			}
+
+
 			UpdateSprite();
 		}
 

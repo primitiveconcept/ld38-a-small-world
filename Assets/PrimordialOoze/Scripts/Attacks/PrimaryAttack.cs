@@ -5,10 +5,19 @@
 
 	public abstract class PrimaryAttack : MonoBehaviour
 	{
+		[SerializeField]
+		private string attackName;
+
 		private Microbe microbe;
 
 
 		#region Properties
+		public string AttackName
+		{
+			get { return this.attackName; }
+		}
+
+
 		public Microbe Microbe
 		{
 			get { return this.microbe; }

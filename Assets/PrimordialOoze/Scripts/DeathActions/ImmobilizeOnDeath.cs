@@ -19,24 +19,31 @@
 
 		public override void OnKilled()
 		{
-			EnemyMicrobeInput enemyInput = GetComponent<EnemyMicrobeInput>();
-			enemyInput.Locked = true;
 			this.microbe.CurrentColor = Color.green;
-			this.WaitForSeconds(0.5f, () => this.microbe.UpdateOpacity());
+			this.microbe.UpdateOpacity();
 
-			/* TODO: Use to eject player.
-						if (GetComponent<PlayerMicrobeInput>() != null)
-							Instantiate(Game.PlayerPrefab);
-							*/
+			EnemyMicrobeInput enemyInput = GetComponent<EnemyMicrobeInput>();
+			PlayerMicrobeInput playerInput = GetComponent<PlayerMicrobeInput>();
 
-			/* TODO: User for actual killing.
-						this.microbe.Animator.Play(Microbe.DeathAnimation);
-						this.WaitForSeconds(0.5f,
-							() =>
-								{
-									Destroy(this.gameObject);
-								});
-								*/
+			if (enemyInput != null)
+			{
+				enemyInput.Locked = true;
+				Game.ShowHintText("Use an Inject attack to enter the enemy while immobilized.", 5f);
+			}
+			
+			// Killed while player was controlling enemy.
+			if (playerInput != null)
+			{
+				Microbe player = Instantiate(Game.PlayerPrefab, this.transform.parent);
+				Destroy(playerInput);
+				player.transform.position = this.transform.position;
+				Camera.main.GetComponent<CameraController>().Target = player.transform;
+				player.Initialize();
+
+				Game.SetSecondaryAttackText("Inject");
+				Game.ShowHintText("Ejected from imobilized cell. Try re-injecting.", 3f);
+			}		
+			
 		}
 	}
 }

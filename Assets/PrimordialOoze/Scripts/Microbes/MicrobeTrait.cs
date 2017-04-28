@@ -19,7 +19,8 @@
 			MaxHealth = 0,
 			Sight = 1,
 			Speed = 2,
-			Strength = 3
+			Strength = 3,
+			Defense = 4
 		}
 
 
